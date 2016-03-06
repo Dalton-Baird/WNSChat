@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WNSChat", "WNSChat\WNSChat.csproj", "{6B4B7186-1E3B-41E8-81F0-59ABF610354A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WNSChat.Client", "WNSChat\WNSChat.Client.csproj", "{6B4B7186-1E3B-41E8-81F0-59ABF610354A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WNSChat.Common", "WNSChat.Common\WNSChat.Common.csproj", "{D1C71493-3074-43BF-B536-CBB2EEF89C98}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WNSChat.Server", "WNSChat.Server\WNSChat.Server.csproj", "{C81C4892-1BC5-4AE4-B6A4-6446E8448D5F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{6B4B7186-1E3B-41E8-81F0-59ABF610354A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6B4B7186-1E3B-41E8-81F0-59ABF610354A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6B4B7186-1E3B-41E8-81F0-59ABF610354A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1C71493-3074-43BF-B536-CBB2EEF89C98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1C71493-3074-43BF-B536-CBB2EEF89C98}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1C71493-3074-43BF-B536-CBB2EEF89C98}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1C71493-3074-43BF-B536-CBB2EEF89C98}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C81C4892-1BC5-4AE4-B6A4-6446E8448D5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C81C4892-1BC5-4AE4-B6A4-6446E8448D5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C81C4892-1BC5-4AE4-B6A4-6446E8448D5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C81C4892-1BC5-4AE4-B6A4-6446E8448D5F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
