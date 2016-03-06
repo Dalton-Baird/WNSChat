@@ -42,8 +42,11 @@
   <ItemGroup>
     <Compile Include="NetworkManager.cs" />
     <Compile Include="Packets\Packet.cs" />
+    <Compile Include="Packets\PacketLogin.cs" />
+    <Compile Include="Packets\PacketServerInfo.cs" />
     <Compile Include="Packets\PacketSimpleMessage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utilities\MathUtils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

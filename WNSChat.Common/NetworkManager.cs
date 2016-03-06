@@ -35,6 +35,8 @@ namespace WNSChat.Common
 
             //Register packets
             this.RegisterPacketType(typeof(PacketSimpleMessage));
+            this.RegisterPacketType(typeof(PacketLogin));
+            this.RegisterPacketType(typeof(PacketServerInfo));
         }
 
         /// <summary>

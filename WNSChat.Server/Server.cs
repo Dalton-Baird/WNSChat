@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using WNSChat.Common.Packets;
 using WNSChat.Common;
+using WNSChat.Common.Utilities;
 
 namespace WNSChat.Server
 {
@@ -21,6 +22,10 @@ namespace WNSChat.Server
 
         private object ClientsLock;
 
+        private IPAddress IPAddress;
+        private ushort Port;
+        private string PasswordHash;
+
         public static void Main(string[] args)
         {
             new Server().Run();
@@ -28,17 +33,19 @@ namespace WNSChat.Server
 
         public void Run()
         {
-            IPAddress ipAddress = IPAddress.Any;
-            ushort port = 9001;
+            this.IPAddress = IPAddress.Any;
+            this.Port = 9001;
+            this.PasswordHash = MathUtils.SHA1_Hash("password"); //TODO: allow changing the password
+
             this.ClientsLock = new object();
             this.Log = Console.WriteLine; //Set up the log, can be changed later
 
             try
             {
-                TcpListener listener = new TcpListener(ipAddress, port);
+                TcpListener listener = new TcpListener(this.IPAddress, this.Port);
                 listener.Start();
 
-                this.Log($"The server is running on port {port}, bound to IP address {ipAddress}");
+                this.Log($"The server is running on port {this.Port}, bound to IP address {this.IPAddress}");
                 this.Log($"The local endpoint is {listener.LocalEndpoint}");
                 this.Log("Waiting for connections...\n");
 
@@ -57,12 +64,7 @@ namespace WNSChat.Server
                     {
                         ClientConnection client = new ClientConnection(listener.AcceptSocket());
 
-                        lock (this.ClientsLock) //Acquire the lock for the Clients list, and then add the client to it
-                            this.Clients.Add(client);
-
-                        ThreadPool.QueueUserWorkItem(this.ProcessClientThread, client);
-                        this.Log($"Connection established to client {client}");
-                        this.LogToClients($"Client {client} connected!");
+                        ThreadPool.QueueUserWorkItem(this.ConnectClientThread, client);
                     }
                 }
             }
@@ -72,6 +74,7 @@ namespace WNSChat.Server
             }
         }
 
+        /** Logs to a client */
         private void LogToClient(ClientConnection client, string data)
         {
             try
@@ -81,6 +84,61 @@ namespace WNSChat.Server
             catch (IOException) { }
         }
 
+        /** Handles connection to a client */
+        private void ConnectClientThread(object obj)
+        {
+            ClientConnection client = obj as ClientConnection;
+
+            if (client == null)
+                throw new ArgumentNullException("obj", "Given client was null!");
+
+            //Send a server info packet
+            NetworkManager.Instance.WritePacket(client.Stream, new PacketServerInfo() { UserCount = this.Clients.Count, PasswordRequired = this.PasswordHash != null});
+
+            try //Read the login packet
+            {
+                Packet packet = NetworkManager.Instance.ReadPacket(client.Stream);
+
+                if (packet is PacketLogin)
+                {
+                    PacketLogin packetLogin = packet as PacketLogin;
+
+                    client.Username = packetLogin.Username;
+
+                    if (!string.Equals(packetLogin.PasswordHash, this.PasswordHash)) //If the password was incorrect
+                    {
+                        this.LogToClient(client, "Incorrect password.");
+                        throw new Exception("Incorrect password.");
+                    }
+                }
+                else //Packet was not a login packet
+                {
+                    this.LogToClient(client, $"ERROR: your client sent a \"{packet.GetType().Name}\" packet instead of a \"{typeof(PacketLogin).Name}\" packet!");
+                    throw new InvalidDataException($"Client sent a \"{packet.GetType().Name}\" packet instead of a \"{typeof(PacketLogin).Name}\" packet!");
+                }
+            }
+            catch (Exception ex)
+            {
+                this.Log($"Error connecting to client: {client}!\n{ex.Message}\nClosing connection.");
+                this.LogToClients($"{client} was unable to connect due to errors.");
+
+                client.Close();
+                client.Dispose();
+
+                return; //Exit thread
+            }
+
+            //If this is reached, the client met the login requirements
+
+            lock (this.ClientsLock) //Acquire the lock for the Clients list, and then add the client to it
+                            this.Clients.Add(client);
+
+            ThreadPool.QueueUserWorkItem(this.ProcessClientThread, client);
+            this.Log($"Connection established to client {client}");
+            this.LogToClients($"Client {client} connected!");
+        }
+
+        /** Handles incoming packets from a client */
         private void ProcessClientThread(object obj)
         {
             ClientConnection client = obj as ClientConnection;
@@ -103,7 +161,7 @@ namespace WNSChat.Server
                         this.LogToClients($"{client}: {packetSimpleMessage.Message}");
                     }
                 }
-                catch (IOException ex)
+                catch (Exception ex)
                 {
                     this.Log($"Error handling client {client}! Error:\n{ex.Message}\nClosing connection!");
                     this.LogToClients($"Client {client} was disconnected due to errors.");

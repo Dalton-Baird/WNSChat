@@ -17,10 +17,14 @@ namespace WNSChat.Server
         protected NetworkStream _Stream;
         public NetworkStream Stream { get { return this._Stream; } }
 
+        /** The client's username */
+        public string Username { get; set; }
+
         public ClientConnection(Socket socket)
         {
             this._Socket = socket;
             this._Stream = new NetworkStream(this.Socket);
+            this.Username = $"Client@{this.Socket.RemoteEndPoint}";
         }
 
         public void Close()
@@ -36,7 +40,7 @@ namespace WNSChat.Server
 
         public override string ToString()
         {
-            return $"Client@{this.Socket.RemoteEndPoint}";
+            return this.Username;
         }
     }
 }
