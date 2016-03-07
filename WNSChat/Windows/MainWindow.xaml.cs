@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -27,7 +28,8 @@ namespace WNSChat.Windows
         public MainWindow()
         {
             InitializeComponent();
-            this.ViewModel = new MainWindowViewModel();
+            this.ViewModel = new MainWindowViewModel(this.Dispatcher, IPAddress.Loopback); //TODO: have a connect screen handle this
+            this.ViewModel.ConnectToServer();
             this.Loaded += (s, e) => this.DataContext = this.ViewModel;
 
             EventHandler requeryCommands = (s, e) => CommandManager.InvalidateRequerySuggested();
