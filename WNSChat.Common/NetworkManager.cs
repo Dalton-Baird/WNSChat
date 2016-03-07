@@ -40,6 +40,7 @@ namespace WNSChat.Common
             this.RegisterPacketType(typeof(PacketSimpleMessage));
             this.RegisterPacketType(typeof(PacketLogin));
             this.RegisterPacketType(typeof(PacketServerInfo));
+            this.RegisterPacketType(typeof(PacketDisconnect));
         }
 
         /// <summary>

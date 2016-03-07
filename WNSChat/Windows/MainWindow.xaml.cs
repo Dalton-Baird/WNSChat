@@ -28,12 +28,26 @@ namespace WNSChat.Windows
         public MainWindow()
         {
             InitializeComponent();
-            this.ViewModel = new MainWindowViewModel(this.Dispatcher, IPAddress.Loopback); //TODO: have a connect screen handle this
+            this.ViewModel = new MainWindowViewModel(this.Dispatcher, "TestUsername", IPAddress.Loopback); //TODO: have a connect screen handle this
             this.ViewModel.ConnectToServer();
             this.Loaded += (s, e) => this.DataContext = this.ViewModel;
 
             EventHandler requeryCommands = (s, e) => CommandManager.InvalidateRequerySuggested();
             //this.ViewModel.SaveCommand.CanExecuteChanged += requeryCommands;
+
+            //Hook up window closed handler
+            this.Closing += (s, e) =>
+            {
+                if (this.ViewModel.DisconnectCommand.CanExecute(null))
+                    this.ViewModel.DisconnectCommand.Execute("Client closed");
+            };
+
+            //ListBox auto scroll
+            //this.ViewModel.MessageLog.CollectionChanged += (s, e) =>
+            //{
+            //    this.MessageListBox.SelectedIndex = this.MessageListBox.Items.Count - 1;
+            //    this.MessageListBox.ScrollIntoView(this.MessageListBox.SelectedItem);
+            //};
 
             //Handle ViewModel Requests
             this.ViewModel.RequestShowError += s => MessageBoxUtils.ShowError(s);

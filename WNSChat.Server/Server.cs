@@ -123,6 +123,15 @@ namespace WNSChat.Server
                         throw new Exception("Incorrect password.");
                     }
                 }
+                else if (packet is PacketDisconnect)
+                {
+                    this.Log($"{client} disconnected before logging in.");
+
+                    client.Close();
+                    client.Dispose();
+
+                    return; //Exit thread
+                }
                 else //Packet was not a login packet
                 {
                     this.LogToClient(client, $"ERROR: your client sent a \"{packet.GetType().Name}\" packet instead of a \"{typeof(PacketLogin).Name}\" packet!");
@@ -133,6 +142,8 @@ namespace WNSChat.Server
             {
                 this.Log($"Error connecting to client: {client}!\n{ex.Message}\nClosing connection.");
                 this.LogToClients($"{client} was unable to connect due to errors.");
+
+                NetworkManager.Instance.WritePacket(client.Stream, new PacketDisconnect() { Reason = "Error connecting"});
 
                 client.Close();
                 client.Dispose();
@@ -171,6 +182,20 @@ namespace WNSChat.Server
 
                         this.Log($"{client}: {packetSimpleMessage.Message}");
                         this.LogToClients($"{client}: {packetSimpleMessage.Message}");
+                    }
+                    else if (packet is PacketDisconnect)
+                    {
+                        PacketDisconnect packetDisconnect = packet as PacketDisconnect;
+
+                        this.Log($"{client} disconnected. Reason: {packetDisconnect.Reason}.");
+                        this.LogToClients($"{client} disconnected. Reason: {packetDisconnect.Reason}.");
+
+                        lock (this.ClientsLock) //Acquire the lock for the Clients list, and then remove the client from it
+                            this.Clients.Remove(client);
+
+                        client.Close();
+                        client.Dispose();
+                        return; //Exit thread
                     }
                 }
                 catch (Exception ex)

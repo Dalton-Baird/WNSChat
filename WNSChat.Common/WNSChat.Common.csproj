@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="NetworkManager.cs" />
     <Compile Include="Packets\Packet.cs" />
+    <Compile Include="Packets\PacketDisconnect.cs" />
     <Compile Include="Packets\PacketLogin.cs" />
     <Compile Include="Packets\PacketServerInfo.cs" />
     <Compile Include="Packets\PacketSimpleMessage.cs" />

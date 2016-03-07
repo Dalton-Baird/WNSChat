@@ -22,7 +22,7 @@
             <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="1" Margin="4,4,4,4" Background="#555555"/>
+        <ListBox x:Name="MessageListBox" Grid.Row="1" Margin="4,4,4,4" Background="#555555" Foreground="#EEEEEE" ItemsSource="{Binding Path=MessageLog}" Focusable="False"/>
 
         <Grid Grid.Row="2" Background="#444444">
             <Grid.ColumnDefinitions>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -29,29 +30,62 @@ namespace WNSChat.ViewModels
 
         #region Constructor
 
-        public MainWindowViewModel(Dispatcher dispatcher, IPAddress serverIP, ushort port = 9001)
+        public MainWindowViewModel(Dispatcher dispatcher, string username, IPAddress serverIP, ushort port = 9001)
         {
             this.Dispatcher = dispatcher;
+            this.Username = username;
             this.ServerIP = serverIP;
             this.ServerPort = port;
 
-            this.Log = Console.WriteLine; //TODO: make this use the UI log
+            this.Log = s =>
+            {
+                if (!this.Dispatcher.HasShutdownStarted) //Only use the dispatcher if it isn't shutting down
+                    this.Dispatcher.Invoke(() => this.MessageLog.Add(s)); //TODO: remove old messages
+            };
 
             //Create commands
 
             this.SendCommand = new ButtonCommand(
-            param =>
+            param => //OnSend
             {
                 if (this.ServerStream != null)
                     NetworkManager.Instance.WritePacket(this.ServerStream, new PacketSimpleMessage() { Message = this.Message });
 
                 this.Message = string.Empty;
+            },
+            param => //CanSend
+            {
+                return this.ServerStream != null && this.ServerStream.CanWrite && !string.IsNullOrWhiteSpace(this.Message);
+            });
+
+            this.DisconnectCommand = new ButtonCommand(
+            param => //OnDisconnect
+            {
+                if (this.ServerStream != null)
+                    NetworkManager.Instance.WritePacket(this.ServerStream, new PacketDisconnect() { Reason = param as string });
+
+                this.Message = string.Empty;
+            },
+            param => //CanDisconnect
+            {
+                return this.ServerStream != null;
             });
         }
 
         #endregion
 
         #region Properties
+
+        protected string _Username;
+        public string Username
+        {
+            get { return this._Username; }
+            set
+            {
+                this._Username = value;
+                this.OnPropertyChanged(nameof(this.Username));
+            }
+        }
 
         protected IPAddress _ServerIP;
         public IPAddress ServerIP
@@ -75,6 +109,27 @@ namespace WNSChat.ViewModels
             }
         }
 
+        /** A list of strings for the message log */
+        protected ObservableCollection<string> _MessageLog;
+        public ObservableCollection<string> MessageLog
+        {
+            get
+            {
+                if (this._MessageLog == null)
+                {
+                    this.MessageLog = new ObservableCollection<string>(); //Calls OnPropertyChanged
+                    this.MessageLog.CollectionChanged += (s, e) => this.OnPropertyChanged(nameof(this.MessageLog)); //Tell the collection to call OnPropertyChanged when it is changed
+                }
+
+                return this._MessageLog;
+            }
+            set
+            {
+                this._MessageLog = value;
+                this.OnPropertyChanged(nameof(this.MessageLog));
+            }
+        }
+
         protected string _Message;
         public string Message
         {
@@ -83,6 +138,7 @@ namespace WNSChat.ViewModels
             {
                 this._Message = value;
                 this.OnPropertyChanged(nameof(this.Message));
+                this.SendCommand.OnCanExecuteChanged(this); //The message was changed
             }
         }
 
@@ -110,6 +166,9 @@ namespace WNSChat.ViewModels
 
                 this.Log("Connected!");
 
+                this.SendCommand.OnCanExecuteChanged(this); //The send button's CanSend conditions changed
+                this.DisconnectCommand.OnCanExecuteChanged(this); //The disconnect command's CanDisconnect conditions changed
+
                 Packet packet = NetworkManager.Instance.ReadPacket(this.ServerStream);
 
                 if (packet is PacketServerInfo)
@@ -120,29 +179,38 @@ namespace WNSChat.ViewModels
                     if (serverInfo.ProtocolVersion < NetworkManager.ProtocolVersion) //Client is out of date
                     {
                         this.Log($"The server is out of date! Client protocol version: {NetworkManager.ProtocolVersion}.  Server protocol version: {serverInfo.ProtocolVersion}.");
+                        NetworkManager.Instance.WritePacket(this.ServerStream, new PacketDisconnect() { Reason = "Server out of date" });
                         throw new Exception("Out of date server.");
                     }
                     else if (serverInfo.ProtocolVersion > NetworkManager.ProtocolVersion) //Server is out of date
                     {
                         this.Log($"Your client is out of date. Client protocol version: {NetworkManager.ProtocolVersion}.  Server protocol version: {serverInfo.ProtocolVersion}.");
+                        NetworkManager.Instance.WritePacket(this.ServerStream, new PacketDisconnect() { Reason = "Client out of date" });
                         throw new Exception("Out of date client.");
                     }
 
                     //Login stuff
                     string passwordHash = string.Empty;
-                    string username = "TestUsername"; //TODO
 
                     if (serverInfo.PasswordRequired)
                     {
                         //TODO: implement this
                         this.RequestShowMessage?.Invoke("Server requires a password, giving it \"password\"");
-                        passwordHash = MathUtils.SHA1_Hash("passwordWrong");
+                        passwordHash = MathUtils.SHA1_Hash("password");
                     }
 
                     //Login
-                    NetworkManager.Instance.WritePacket(this.ServerStream, new PacketLogin() { ProtocolVersion = NetworkManager.ProtocolVersion, Username = username, PasswordHash = passwordHash });
+                    NetworkManager.Instance.WritePacket(this.ServerStream, new PacketLogin() { ProtocolVersion = NetworkManager.ProtocolVersion, Username = this.Username, PasswordHash = passwordHash });
 
                     //TODO: find a way to handle server login deny
+                }
+                else if (packet is PacketDisconnect)
+                {
+                    PacketDisconnect packetDisconnect = packet as PacketDisconnect;
+
+                    this.Log($"Server refused connection.  Reason: {packetDisconnect.Reason}.");
+                    this.DisconnectFromServer();
+                    return false;
                 }
                 else
                 {
@@ -156,15 +224,31 @@ namespace WNSChat.ViewModels
             {
                 this.Log($"Error encountered in client loop: {ex}");
 
-                this.Client = null;
-                this.ServerStream = null;
+                this.DisconnectFromServer("Encountered an error while connecting");
 
                 return false;
             }
         }
 
+        /** Disconnects from the server.  If a non-null string is provided, a disconnect packet will be sent with that as the reason */
+        public void DisconnectFromServer(string disconnectReason = null)
+        {
+            if (disconnectReason != null)
+                NetworkManager.Instance.WritePacket(this.ServerStream, new PacketDisconnect() { Reason = disconnectReason });
+
+            this.SendCommand.OnCanExecuteChanged(this); //The send button's CanSend conditions changed
+            this.DisconnectCommand.OnCanExecuteChanged(this); //The disconnect command's CanDisconnect conditions changed
+
+            this.Client.Close();
+            this.Client.Dispose();
+            this.ServerStream.Close();
+            this.ServerStream.Dispose();
+            this.Client = null;
+            this.ServerStream = null;
+        }
+
         /** Thread that listens for server packets */
-        public void ProcessServerThread(object obj) //TODO: have this be able to disconect
+        public void ProcessServerThread(object obj) //TODO: have this be able to disconnect
         {
             if (this.ServerStream == null)
                 throw new NullReferenceException("Cannot listen to server, stream is null!");
@@ -180,7 +264,17 @@ namespace WNSChat.ViewModels
                     {
                         PacketSimpleMessage packetSimpleMessage = packet as PacketSimpleMessage;
 
-                        this.Log($"{"Server"}: {packetSimpleMessage.Message}");
+                        this.Log($"{packetSimpleMessage.Message}");
+                    }
+                    else if (packet is PacketDisconnect)
+                    {
+                        PacketDisconnect packetDisconnect = packet as PacketDisconnect;
+
+                        this.Log($"Server closed connection.  Reason: {packetDisconnect.Reason}.");
+
+                        this.DisconnectFromServer();
+
+                        return; //Exit thread
                     }
                 }
                 catch (Exception ex)
@@ -196,6 +290,7 @@ namespace WNSChat.ViewModels
         #region Commands
 
         public ButtonCommand SendCommand { get; protected set; }
+        public ButtonCommand DisconnectCommand { get; protected set; }
 
         #endregion
 
