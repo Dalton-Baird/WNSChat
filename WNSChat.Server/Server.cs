@@ -93,7 +93,7 @@ namespace WNSChat.Server
                 throw new ArgumentNullException("obj", "Given client was null!");
 
             //Send a server info packet
-            NetworkManager.Instance.WritePacket(client.Stream, new PacketServerInfo() { UserCount = this.Clients.Count, PasswordRequired = this.PasswordHash != null});
+            NetworkManager.Instance.WritePacket(client.Stream, new PacketServerInfo() { ProtocolVersion = NetworkManager.ProtocolVersion, UserCount = this.Clients.Count, PasswordRequired = this.PasswordHash != null});
 
             try //Read the login packet
             {
@@ -104,6 +104,18 @@ namespace WNSChat.Server
                     PacketLogin packetLogin = packet as PacketLogin;
 
                     client.Username = packetLogin.Username;
+
+                    //Check protocol versions
+                    if (packetLogin.ProtocolVersion < NetworkManager.ProtocolVersion) //Client is out of date
+                    {
+                        this.LogToClient(client, $"Your client is out of date! Server protocol version: {NetworkManager.ProtocolVersion}.  Your protocol version: {packetLogin.ProtocolVersion}.");
+                        throw new Exception("Out of date client.");
+                    }
+                    else if (packetLogin.ProtocolVersion > NetworkManager.ProtocolVersion) //Server is out of date
+                    {
+                        this.LogToClient(client, $"This server is out of date. Server protocol version: {NetworkManager.ProtocolVersion}.  Your protocol version: {packetLogin.ProtocolVersion}.");
+                        throw new Exception("Out of date server.");
+                    }
 
                     if (!string.Equals(packetLogin.PasswordHash, this.PasswordHash)) //If the password was incorrect
                     {

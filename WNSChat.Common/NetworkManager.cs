@@ -10,6 +10,9 @@ namespace WNSChat.Common
 {
     public class NetworkManager
     {
+        /** The network protocol version */
+        public const uint ProtocolVersion = 1;
+
         /** The single instance of the NetworkManager */
         private static NetworkManager _Instance;
         public static NetworkManager Instance

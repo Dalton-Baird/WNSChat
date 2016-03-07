@@ -1,0 +1,38 @@
+﻿<Window x:Class="WNSChat.Windows.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WNSChat.Windows"
+        xmlns:common="clr-namespace:WNSChat.Common;assembly=WNSChat.Common"
+        mc:Ignorable="d"
+        Height="384" Width="512" MinHeight="384" MinWidth="384">
+
+    <Window.Title>
+        <MultiBinding StringFormat="WNS Chat - v{0} - Protocol Version: {1}">
+            <Binding Path="ProgramVersion"/>
+            <Binding Source="{x:Static common:NetworkManager.ProtocolVersion}"/>
+        </MultiBinding>
+    </Window.Title>
+    
+    <Grid Background="#444444">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="60"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="1" Margin="4,4,4,4" Background="#555555"/>
+
+        <Grid Grid.Row="2" Background="#444444">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="60"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox Grid.Column="0" Height="52" Margin="4,4,4,4" Background="#555555" ToolTip="Enter a message" Foreground="#EEEEEE" Text="{Binding Path=Message, UpdateSourceTrigger=PropertyChanged}"/>
+            <Button Grid.Column="1" Content="Send" Width="52" Margin="4,4,4,4" HorizontalAlignment="Right" Background="#333333" Foreground="#EEEEEE"
+                    IsDefault="True" ToolTip="Send the message" Command="{Binding SendCommand, Mode=OneWay}"/>
+        </Grid>
+    </Grid>
+</Window>
