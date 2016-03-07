@@ -14,6 +14,7 @@ using WNSChat.Client.Utilities;
 using WNSChat.Common;
 using WNSChat.Common.Packets;
 using WNSChat.Common.Utilities;
+using WNSChat.Utilities;
 
 namespace WNSChat.ViewModels
 {
@@ -26,7 +27,7 @@ namespace WNSChat.ViewModels
         protected TcpClient Client;
 
         /** The stream to the server */
-        Stream ServerStream;
+        //Stream ServerStream;
 
         #region Constructor
 
@@ -48,33 +49,44 @@ namespace WNSChat.ViewModels
             this.SendCommand = new ButtonCommand(
             param => //OnSend
             {
-                if (this.ServerStream != null)
-                    NetworkManager.Instance.WritePacket(this.ServerStream, new PacketSimpleMessage() { Message = this.Message });
+                if (this.Server?.Stream != null)
+                    NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketSimpleMessage() { Message = this.Message });
 
                 this.Message = string.Empty;
             },
             param => //CanSend
             {
-                return this.ServerStream != null && this.ServerStream.CanWrite && !string.IsNullOrWhiteSpace(this.Message);
+                return this.Server?.Stream != null && this.Server.Stream.CanWrite && !string.IsNullOrWhiteSpace(this.Message);
             });
 
             this.DisconnectCommand = new ButtonCommand(
             param => //OnDisconnect
             {
-                if (this.ServerStream != null)
-                    NetworkManager.Instance.WritePacket(this.ServerStream, new PacketDisconnect() { Reason = param as string });
+                if (this.Server?.Stream != null)
+                    NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = param as string });
 
                 this.Message = string.Empty;
             },
             param => //CanDisconnect
             {
-                return this.ServerStream != null;
+                return this.Server?.Stream != null;
             });
         }
 
         #endregion
 
         #region Properties
+
+        protected ServerConnection _Server;
+        public ServerConnection Server
+        {
+            get { return this._Server; }
+            set
+            {
+                this._Server = value;
+                this.OnPropertyChanged(nameof(this.Server));
+            }
+        }
 
         protected string _Username;
         public string Username
@@ -162,14 +174,14 @@ namespace WNSChat.ViewModels
                 this.Log($"Connecting to server at {this.ServerIP}:{this.ServerPort}...");
 
                 this.Client.Connect(this.ServerIP, this.ServerPort);
-                this.ServerStream = Client.GetStream();
+                this.Server = new ServerConnection(this.Client);
 
                 this.Log("Connected!");
 
                 this.SendCommand.OnCanExecuteChanged(this); //The send button's CanSend conditions changed
                 this.DisconnectCommand.OnCanExecuteChanged(this); //The disconnect command's CanDisconnect conditions changed
 
-                Packet packet = NetworkManager.Instance.ReadPacket(this.ServerStream);
+                Packet packet = NetworkManager.Instance.ReadPacket(this.Server.Stream);
 
                 if (packet is PacketServerInfo)
                 {
@@ -179,17 +191,20 @@ namespace WNSChat.ViewModels
                     if (serverInfo.ProtocolVersion < NetworkManager.ProtocolVersion) //Client is out of date
                     {
                         this.Log($"The server is out of date! Client protocol version: {NetworkManager.ProtocolVersion}.  Server protocol version: {serverInfo.ProtocolVersion}.");
-                        NetworkManager.Instance.WritePacket(this.ServerStream, new PacketDisconnect() { Reason = "Server out of date" });
+                        NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = "Server out of date" });
                         throw new Exception("Out of date server.");
                     }
                     else if (serverInfo.ProtocolVersion > NetworkManager.ProtocolVersion) //Server is out of date
                     {
                         this.Log($"Your client is out of date. Client protocol version: {NetworkManager.ProtocolVersion}.  Server protocol version: {serverInfo.ProtocolVersion}.");
-                        NetworkManager.Instance.WritePacket(this.ServerStream, new PacketDisconnect() { Reason = "Client out of date" });
+                        NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = "Client out of date" });
                         throw new Exception("Out of date client.");
                     }
 
                     //Login stuff
+                    this.Server.ServerName = serverInfo.ServerName;
+                    this.OnPropertyChanged(nameof(this.Server));
+
                     string passwordHash = string.Empty;
 
                     if (serverInfo.PasswordRequired)
@@ -200,7 +215,7 @@ namespace WNSChat.ViewModels
                     }
 
                     //Login
-                    NetworkManager.Instance.WritePacket(this.ServerStream, new PacketLogin() { ProtocolVersion = NetworkManager.ProtocolVersion, Username = this.Username, PasswordHash = passwordHash });
+                    NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketLogin() { ProtocolVersion = NetworkManager.ProtocolVersion, Username = this.Username, PasswordHash = passwordHash });
 
                     //TODO: find a way to handle server login deny
                 }
@@ -234,30 +249,30 @@ namespace WNSChat.ViewModels
         public void DisconnectFromServer(string disconnectReason = null)
         {
             if (disconnectReason != null)
-                NetworkManager.Instance.WritePacket(this.ServerStream, new PacketDisconnect() { Reason = disconnectReason });
+                NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = disconnectReason });
 
             this.SendCommand.OnCanExecuteChanged(this); //The send button's CanSend conditions changed
             this.DisconnectCommand.OnCanExecuteChanged(this); //The disconnect command's CanDisconnect conditions changed
 
             this.Client.Close();
             this.Client.Dispose();
-            this.ServerStream.Close();
-            this.ServerStream.Dispose();
+            this.Server.Close();
+            this.Server.Dispose();
             this.Client = null;
-            this.ServerStream = null;
+            this.Server = null;
         }
 
         /** Thread that listens for server packets */
         public void ProcessServerThread(object obj) //TODO: have this be able to disconnect
         {
-            if (this.ServerStream == null)
-                throw new NullReferenceException("Cannot listen to server, stream is null!");
+            if (this.Server?.Stream == null)
+                throw new NullReferenceException("Cannot listen to server, server or stream is null!");
 
             for (;;) //Infinite Loop
             {
                 try
                 {
-                    Packet packet = NetworkManager.Instance.ReadPacket(this.ServerStream);
+                    Packet packet = NetworkManager.Instance.ReadPacket(this.Server.Stream);
 
                     //Decide what to do based on the packet type
                     if (packet is PacketSimpleMessage)

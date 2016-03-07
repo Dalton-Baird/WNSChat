@@ -25,6 +25,7 @@ namespace WNSChat.Server
         private IPAddress IPAddress;
         private ushort Port;
         private string PasswordHash;
+        private string ServerName;
 
         public static void Main(string[] args)
         {
@@ -36,6 +37,7 @@ namespace WNSChat.Server
             this.IPAddress = IPAddress.Any;
             this.Port = 9001;
             this.PasswordHash = MathUtils.SHA1_Hash("password"); //TODO: allow changing the password
+            this.ServerName = "Untitled Server"; //TODO: allow changing the server name
 
             this.ClientsLock = new object();
             this.Log = Console.WriteLine; //Set up the log, can be changed later
@@ -93,7 +95,7 @@ namespace WNSChat.Server
                 throw new ArgumentNullException("obj", "Given client was null!");
 
             //Send a server info packet
-            NetworkManager.Instance.WritePacket(client.Stream, new PacketServerInfo() { ProtocolVersion = NetworkManager.ProtocolVersion, UserCount = this.Clients.Count, PasswordRequired = this.PasswordHash != null});
+            NetworkManager.Instance.WritePacket(client.Stream, new PacketServerInfo() { ProtocolVersion = NetworkManager.ProtocolVersion, UserCount = this.Clients.Count, PasswordRequired = this.PasswordHash != null, ServerName = this.ServerName});
 
             try //Read the login packet
             {
@@ -122,6 +124,8 @@ namespace WNSChat.Server
                         this.LogToClient(client, "Incorrect password.");
                         throw new Exception("Incorrect password.");
                     }
+
+                    //TODO: deny duplicate client names
                 }
                 else if (packet is PacketDisconnect)
                 {

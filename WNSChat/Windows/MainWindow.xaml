@@ -22,6 +22,30 @@
             <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
 
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="200"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Margin="4,4,4,4" Foreground="#EEEEEE">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="Username: {0}">
+                        <Binding Path="Username"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+
+            <TextBlock Grid.Column="2" Margin="4,4,4,4" Foreground="#EEEEEE" TextAlignment="Right">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="Server: {0}">
+                        <Binding Path="Server.ServerName"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+        </Grid>
+
         <ListBox x:Name="MessageListBox" Grid.Row="1" Margin="4,4,4,4" Background="#555555" Foreground="#EEEEEE" ItemsSource="{Binding Path=MessageLog}" Focusable="False"/>
 
         <Grid Grid.Row="2" Background="#444444">
