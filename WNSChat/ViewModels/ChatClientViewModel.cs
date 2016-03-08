@@ -67,7 +67,7 @@ namespace WNSChat.ViewModels
                 //if (this.Server?.Stream != null)
                 //    NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = param as string });
 
-                this.Message = string.Empty;
+                //this.Message = string.Empty;
             },
             param => //CanDisconnect
             {
@@ -260,10 +260,10 @@ namespace WNSChat.ViewModels
                 this.SendCommand.OnCanExecuteChanged(this); //The send button's CanSend conditions changed
                 this.DisconnectCommand.OnCanExecuteChanged(this); //The disconnect command's CanDisconnect conditions changed
 
-                this.Client.Close();
-                this.Client.Dispose();
-                this.Server.Close();
-                this.Server.Dispose();
+                this.Client?.Close();
+                this.Client?.Dispose();
+                this.Server?.Close();
+                this.Server?.Dispose();
                 this.Client = null;
                 this.Server = null;
 

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using WNSChat.Common.Packets;
 using WNSChat.Common;
 using WNSChat.Common.Utilities;
+using WNSChat.Common.Exceptions;
 
 namespace WNSChat.Server
 {
@@ -111,18 +112,18 @@ namespace WNSChat.Server
                     if (packetLogin.ProtocolVersion < NetworkManager.ProtocolVersion) //Client is out of date
                     {
                         this.LogToClient(client, $"Your client is out of date! Server protocol version: {NetworkManager.ProtocolVersion}.  Your protocol version: {packetLogin.ProtocolVersion}.");
-                        throw new Exception("Out of date client.");
+                        throw new LoginFailedException("Out of date client.  Server protocol version: {NetworkManager.ProtocolVersion}.  Client protocol version: {packetLogin.ProtocolVersion}");
                     }
                     else if (packetLogin.ProtocolVersion > NetworkManager.ProtocolVersion) //Server is out of date
                     {
                         this.LogToClient(client, $"This server is out of date. Server protocol version: {NetworkManager.ProtocolVersion}.  Your protocol version: {packetLogin.ProtocolVersion}.");
-                        throw new Exception("Out of date server.");
+                        throw new LoginFailedException("Out of date server.  Server protocol version: {NetworkManager.ProtocolVersion}.  Client protocol version: {packetLogin.ProtocolVersion}");
                     }
 
                     if (!string.Equals(packetLogin.PasswordHash, this.PasswordHash)) //If the password was incorrect
                     {
                         this.LogToClient(client, "Incorrect password.");
-                        throw new Exception("Incorrect password.");
+                        throw new LoginFailedException("Incorrect password");
                     }
 
                     //TODO: deny duplicate client names
@@ -130,6 +131,7 @@ namespace WNSChat.Server
                 else if (packet is PacketDisconnect)
                 {
                     this.Log($"{client} disconnected before logging in.");
+                    this.LogToClients($"{client} disconnected before logging in.");
 
                     client.Close();
                     client.Dispose();
@@ -142,12 +144,24 @@ namespace WNSChat.Server
                     throw new InvalidDataException($"Client sent a \"{packet.GetType().Name}\" packet instead of a \"{typeof(PacketLogin).Name}\" packet!");
                 }
             }
+            catch (LoginFailedException ex)
+            {
+                this.Log($"{client} failed to log in: {ex.GetType().Name}: {ex.Message}.\nClosing connection.");
+                this.LogToClients($"{client} failed to log in: {ex.GetType().Name}: {ex.Message}.");
+
+                NetworkManager.Instance.WritePacket(client.Stream, new PacketDisconnect() { Reason = $"{ex.GetType().Name}: {ex.Message}" });
+
+                client.Close();
+                client.Dispose();
+
+                return; //Exit thread
+            }
             catch (Exception ex)
             {
-                this.Log($"Error connecting to client: {client}!\n{ex.Message}\nClosing connection.");
+                this.Log($"Error connecting to client: {client}!\n{ex.GetType().Name}: {ex.Message}\nClosing connection.");
                 this.LogToClients($"{client} was unable to connect due to errors.");
 
-                NetworkManager.Instance.WritePacket(client.Stream, new PacketDisconnect() { Reason = "Error connecting"});
+                NetworkManager.Instance.WritePacket(client.Stream, new PacketDisconnect() { Reason = $"{ex.GetType().Name}: {ex.Message}"});
 
                 client.Close();
                 client.Dispose();

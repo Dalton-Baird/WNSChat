@@ -37,11 +37,16 @@ namespace WNSChat.Windows
             //this.ViewModel.SaveCommand.CanExecuteChanged += requeryCommands;
 
             //Hook up window closed handler
-            this.Closing += (s, e) =>
-            {
-                if (this.ViewModel.ChatClient.DisconnectCommand.CanExecute(null))
-                    this.ViewModel.ChatClient.DisconnectCommand.Execute("Client closed");
-            };
+            //this.Closing += (s, e) => //This is commented out until I can fix it
+            //{
+            //    if (this.ViewModel.ChatClient.DisconnectCommand.CanExecute(null))
+            //    {
+            //        //TODO: Find out how to have this not crash
+            //        //this.DataContext = null; //Disconnect the view model so we are no longer bound to it
+            //        //this.ViewModel.ChatClient.Log = System.Console.WriteLine; //Change the log so it no longer causes binding updates
+            //        this.ViewModel.ChatClient.DisconnectCommand.Execute("Client closed");
+            //    }
+            //};
 
             //ListBox auto scroll
             //this.ViewModel.MessageLog.CollectionChanged += (s, e) =>

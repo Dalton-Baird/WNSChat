@@ -26,8 +26,10 @@ namespace WNSChat.ViewModels
         {
             this.ChatClient = chatClient;
 
+            PropertyChangedEventHandler propertyChangedDelegate = (s, e) => this.PropertyChanged?.Invoke(s, new PropertyChangedEventArgs($"ChatClient.{e.PropertyName}"));
+
             //Hook up inner view model stuff
-            this.ChatClient.PropertyChanged += (s, e) => this.PropertyChanged?.Invoke(s, new PropertyChangedEventArgs($"ChatClient.{e.PropertyName}"));
+            this.ChatClient.PropertyChanged += propertyChangedDelegate;
 
             this.ChatClient.RequestShowError += this.RequestShowError;
             this.ChatClient.RequestConfirmDelete += this.RequestConfirmDelete;
@@ -48,6 +50,8 @@ namespace WNSChat.ViewModels
                 this.ChatClient.RequestConfirmDelete -= this.RequestConfirmDelete;
                 this.ChatClient.RequestConfirmYesNo -= this.RequestConfirmYesNo;
                 this.ChatClient.RequestShowMessage -= this.RequestShowMessage;
+
+                this.ChatClient.PropertyChanged -= propertyChangedDelegate;
 
                 //Show the connect window and close
                 this.RequestShowConnectWindow?.Invoke(this.ChatClient);
