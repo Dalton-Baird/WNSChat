@@ -35,8 +35,21 @@ namespace WNSChat.ViewModels
             this.ChatClient.RequestShowMessage += this.RequestShowMessage;
 
             //Show the connect window and close this window if the chat client gets disconnected
-            this.ChatClient.Disconnected += () =>
+            this.ChatClient.Disconnected += (clientDisconnectReason, clientReasonIsBad, serverDisconnectReason) =>
             {
+                if (serverDisconnectReason != null)
+                    this.RequestShowError?.Invoke($"Server closed connection. Reason: {serverDisconnectReason}");
+
+                if (clientReasonIsBad && clientDisconnectReason != null)
+                    this.RequestShowError?.Invoke($"Error: Client had to close connection.  Reason: {clientDisconnectReason}");
+
+                //Disconnect this class's event handlers
+                this.ChatClient.RequestShowError -= this.RequestShowError;
+                this.ChatClient.RequestConfirmDelete -= this.RequestConfirmDelete;
+                this.ChatClient.RequestConfirmYesNo -= this.RequestConfirmYesNo;
+                this.ChatClient.RequestShowMessage -= this.RequestShowMessage;
+
+                //Show the connect window and close
                 this.RequestShowConnectWindow?.Invoke(this.ChatClient);
                 this.RequestClose?.Invoke();
             };

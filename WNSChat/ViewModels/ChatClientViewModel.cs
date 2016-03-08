@@ -62,8 +62,10 @@ namespace WNSChat.ViewModels
             this.DisconnectCommand = new ButtonCommand(
             param => //OnDisconnect
             {
-                if (this.Server?.Stream != null)
-                    NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = param as string });
+                this.DisconnectFromServer(param as string, clientReasonIsBad: false);
+
+                //if (this.Server?.Stream != null)
+                //    NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = param as string });
 
                 this.Message = string.Empty;
             },
@@ -201,25 +203,23 @@ namespace WNSChat.ViewModels
 
                     string passwordHash = string.Empty;
 
-                    if (serverInfo.PasswordRequired)
+                    if (serverInfo.PasswordRequired) //If the server requires a password, get one from the user with the delegate
                     {
-                        //TODO: does this work?
                         string password = getPassword();
-                        //this.RequestShowMessage?.Invoke("Server requires a password, giving it \"password\"");
                         passwordHash = MathUtils.SHA1_Hash(password);
                     }
 
                     //Login
                     NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketLogin() { ProtocolVersion = NetworkManager.ProtocolVersion, Username = this.Username, PasswordHash = passwordHash });
 
-                    //TODO: find a way to handle server login deny
+                    //TODO: find a way to handle server login deny //This is kind of handled by the main handler
                 }
                 else if (packet is PacketDisconnect)
                 {
                     PacketDisconnect packetDisconnect = packet as PacketDisconnect;
 
                     this.Log($"Server refused connection.  Reason: {packetDisconnect.Reason}.");
-                    this.DisconnectFromServer();
+                    this.DisconnectFromServer(null, false, packetDisconnect.Reason);
                     return false;
                 }
                 else
@@ -234,29 +234,41 @@ namespace WNSChat.ViewModels
             {
                 this.Log($"Error encountered in client loop: {ex}");
 
-                this.DisconnectFromServer("Encountered an error while connecting");
+                this.DisconnectFromServer("Encountered an error while connecting", clientReasonIsBad: true);
 
                 return false;
             }
         }
 
         /** Disconnects from the server.  If a non-null string is provided, a disconnect packet will be sent with that as the reason */
-        public void DisconnectFromServer(string disconnectReason = null)
+        public void DisconnectFromServer(string clientDisconnectReason = null, bool clientReasonIsBad = false, string serverDisconnectReason = null)
         {
-            if (disconnectReason != null)
-                NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = disconnectReason });
+            if (clientDisconnectReason != null)
+            {
+                try
+                {
+                    NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = clientDisconnectReason });
+                }
+                catch (Exception ex)
+                {
+                    this.Log($"Error sending disconnect packet: {ex}");
+                }
+            }
 
-            this.SendCommand.OnCanExecuteChanged(this); //The send button's CanSend conditions changed
-            this.DisconnectCommand.OnCanExecuteChanged(this); //The disconnect command's CanDisconnect conditions changed
+            this.Dispatcher.Invoke(() => //All of this needs done on the UI thread
+            {
+                this.SendCommand.OnCanExecuteChanged(this); //The send button's CanSend conditions changed
+                this.DisconnectCommand.OnCanExecuteChanged(this); //The disconnect command's CanDisconnect conditions changed
 
-            this.Client.Close();
-            this.Client.Dispose();
-            this.Server.Close();
-            this.Server.Dispose();
-            this.Client = null;
-            this.Server = null;
+                this.Client.Close();
+                this.Client.Dispose();
+                this.Server.Close();
+                this.Server.Dispose();
+                this.Client = null;
+                this.Server = null;
 
-            this.Disconnected?.Invoke(); //Fire the disconnected event
+                this.Disconnected?.Invoke(clientDisconnectReason, clientReasonIsBad, serverDisconnectReason); //Fire the disconnected event
+            });
         }
 
         /** Thread that listens for server packets */
@@ -284,17 +296,30 @@ namespace WNSChat.ViewModels
 
                         this.Log($"Server closed connection.  Reason: {packetDisconnect.Reason}.");
 
-                        this.DisconnectFromServer();
+                        this.DisconnectFromServer(null, false, packetDisconnect.Reason);
 
                         return; //Exit thread
                     }
                 }
                 catch (Exception ex)
                 {
-                    this.Log($"Error handling data from server! Ignoring it.\n{ex}");
-                    continue;
+                    this.Log($"Error handling data from server!\n{ex}");
+                    //continue;
+                    this.DisconnectFromServer($"Error handling data from server: {ex.Message}", clientReasonIsBad: true);
+                    break;
                 }
             }
+        }
+
+        /**
+         * Called when the UI thread gets changed, such as when this gets passed to a new window.
+         * The Dispatcher for the new UI thread is passed.
+         */
+        public void OnUIThreadChanged(Dispatcher newDispatcher)
+        {
+            this.Dispatcher = newDispatcher;
+
+            this.MessageLog = null; //It will get recreated for the current thread.  TODO: Can I copy the data instead?
         }
 
         #endregion
@@ -318,7 +343,12 @@ namespace WNSChat.ViewModels
         public event Action<string> RequestShowMessage;
 
         public Action<string> Log;
-        public event Action Disconnected;
+
+        /** Fired when the client gets disconnected. First string is the client's reason if the client
+         * initiated it, second string is the server's reason if the server initiated it.  Will be fired
+         on the UI thread. If the bool is true, the client reason is bad (an error).
+         */
+        public event Action<string, bool, string> Disconnected;
 
         #endregion
     }

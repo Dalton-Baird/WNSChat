@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using WNSChat.ViewModels;
+using WNSChat.Utilities.WindowExtensions;
 
 namespace WNSChat.Windows
 {
@@ -30,6 +31,7 @@ namespace WNSChat.Windows
 
             if (chatClient != null) //If I ever decide to reuse the chat client, do it here
             {
+                chatClient.OnUIThreadChanged(this.Dispatcher); //The UI thread just changed
                 //If the chat client needs to be disposed, do it here
             }
 
@@ -47,7 +49,16 @@ namespace WNSChat.Windows
                 return passwordDialog.GetPassword();
             };
 
-            this.ViewModel.RequestOpenChatWindow += ccvm => new MainWindow(ccvm).Show();
+            this.ViewModel.RequestOpenChatWindow += ccvm => new MainWindow(ccvm).CenterOnWindow(this).Show();
+
+            //this.ViewModel.RequestOpenChatWindow += ccvm =>
+            //{
+            //    MainWindow w = new MainWindow(ccvm);
+            //    w.Left = this.Left + this.Width / 2 - w.Width / 2;
+            //    w.Top = this.Top + this.Height / 2 - w.Height / 2;
+            //    w.Show();
+            //};
+
             this.ViewModel.RequestClose += this.Close;
         }
     }

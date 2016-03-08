@@ -13,37 +13,37 @@ namespace WNSChat.Client.Utilities
     /// </summary>
     public static class MessageBoxUtils
     {
-        public static MessageBoxResult ShowError(string message)
+        public static MessageBoxResult ShowError(string message, Window owner = null)
         {
-            return MessageBox.Show(message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return MessageBox.Show(owner, message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
-        public static MessageBoxResult ConfirmDelete(string message = "Are you sure you want to delete this?")
+        public static MessageBoxResult ConfirmDelete(string message = "Are you sure you want to delete this?", Window owner = null)
         {
-            return MessageBox.Show(message, "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+            return MessageBox.Show(owner, message, "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
         }
 
-        public static MessageBoxResult ConfirmYN(string message)
+        public static MessageBoxResult ConfirmYN(string message, Window owner = null)
         {
-            return MessageBox.Show(message, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+            return MessageBox.Show(owner, message, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
         }
 
-        public static MessageBoxResult ShowMessage(string message)
+        public static MessageBoxResult ShowMessage(string message, Window owner = null)
         {
-            return MessageBox.Show(message, "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+            return MessageBox.Show(owner, message, "Information", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         //Helper method that returns bool instead
-        public static bool BoolConfirmDelete(string message = "Are you sure you want to delete this?")
+        public static bool BoolConfirmDelete(string message = "Are you sure you want to delete this?", Window owner = null)
         {
-            MessageBoxResult result = ConfirmDelete(message);
+            MessageBoxResult result = ConfirmDelete(message, owner);
             return result == MessageBoxResult.OK || result == MessageBoxResult.Yes;
         }
 
         //Helper method that returns bool instead
-        public static bool BoolConfirmYN(string message)
+        public static bool BoolConfirmYN(string message, Window owner = null)
         {
-            MessageBoxResult result = ConfirmYN(message);
+            MessageBoxResult result = ConfirmYN(message, owner);
             return result == MessageBoxResult.OK || result == MessageBoxResult.Yes;
         }
     }

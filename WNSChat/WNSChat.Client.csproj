@@ -58,6 +58,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Utilities\WindowExtensions\WindowExtensions.cs" />
     <Compile Include="ViewModels\ChatClientViewModel.cs" />
     <Compile Include="ViewModels\ConnectWindowViewModel.cs" />
     <Compile Include="ViewModels\PasswordPopupWindowViewModel.cs" />

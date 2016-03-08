@@ -15,6 +15,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using WNSChat.Client.Utilities;
 using WNSChat.ViewModels;
+using WNSChat.Utilities.WindowExtensions;
 
 namespace WNSChat.Windows
 {
@@ -28,6 +29,7 @@ namespace WNSChat.Windows
         public MainWindow(ChatClientViewModel chatClient)
         {
             InitializeComponent();
+            chatClient.OnUIThreadChanged(this.Dispatcher); //The UI thread just changed
             this.ViewModel = new MainWindowViewModel(chatClient);
             this.Loaded += (s, e) => this.DataContext = this.ViewModel;
 
@@ -49,12 +51,17 @@ namespace WNSChat.Windows
             //};
 
             //Handle ViewModel Requests
-            this.ViewModel.RequestShowError += s => MessageBoxUtils.ShowError(s);
-            this.ViewModel.RequestConfirmDelete += s => MessageBoxUtils.BoolConfirmDelete(s);
-            this.ViewModel.RequestConfirmYesNo += s => MessageBoxUtils.BoolConfirmYN(s);
-            this.ViewModel.RequestShowMessage += s => MessageBoxUtils.ShowMessage(s);
+            Action<string> showError = s => MessageBoxUtils.ShowError(s, this);
+            Predicate<string> confirmDelete = s => MessageBoxUtils.BoolConfirmDelete(s, this);
+            Predicate<string> confirmYesNo = s => MessageBoxUtils.BoolConfirmYN(s, this);
+            Action<string> showMessage = s => MessageBoxUtils.ShowMessage(s, this);
 
-            this.ViewModel.RequestShowConnectWindow += ccvm => new ConnectWindow(ccvm).Show();
+            this.ViewModel.RequestShowError += showError;
+            this.ViewModel.RequestConfirmDelete += confirmDelete;
+            this.ViewModel.RequestConfirmYesNo += confirmYesNo;
+            this.ViewModel.RequestShowMessage += showMessage;
+
+            this.ViewModel.RequestShowConnectWindow += ccvm => new ConnectWindow(ccvm).CenterOnWindow(this).Show();
             this.ViewModel.RequestClose += this.Close;
         }
     }
