@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using WNSChat.ViewModels;
 
 namespace WNSChat.Windows
 {
@@ -19,9 +20,24 @@ namespace WNSChat.Windows
     /// </summary>
     public partial class ConnectWindow : Window
     {
+        private ConnectWindowViewModel ViewModel;
+
         public ConnectWindow()
         {
             InitializeComponent();
+            this.ViewModel = new ConnectWindowViewModel();
+            this.Loaded += (s, e) => this.DataContext = this.ViewModel;
+
+            EventHandler requeryCommands = (s, e) => CommandManager.InvalidateRequerySuggested();
+            this.ViewModel.ConnectCommand.CanExecuteChanged += requeryCommands;
+
+            //Handle ViewModel requests
+            this.ViewModel.RequestShowPasswordDialog += title =>
+            {
+                PasswordPopupWindow passwordDialog = new PasswordPopupWindow(title) { Owner = this };
+                passwordDialog.ShowDialog();
+                return passwordDialog.GetPassword();
+            };
         }
     }
 }

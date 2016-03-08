@@ -58,6 +58,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ViewModels\ConnectWindowViewModel.cs" />
+    <Compile Include="ViewModels\PasswordPopupWindowViewModel.cs" />
+    <Compile Include="Windows\PasswordPopupWindow.xaml.cs">
+      <DependentUpon>PasswordPopupWindow.xaml</DependentUpon>
+    </Compile>
     <Page Include="Windows\ConnectWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -82,6 +87,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="Windows\PasswordPopupWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
