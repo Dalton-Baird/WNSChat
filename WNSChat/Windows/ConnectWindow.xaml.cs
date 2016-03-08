@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using WNSChat.ViewModels;
 using WNSChat.Utilities.WindowExtensions;
+using WNSChat.Properties;
 
 namespace WNSChat.Windows
 {
@@ -38,6 +39,17 @@ namespace WNSChat.Windows
             this.ViewModel = new ConnectWindowViewModel(this.Dispatcher);
             this.Loaded += (s, e) => this.DataContext = this.ViewModel;
 
+            //Load the saved data
+            if (!string.IsNullOrWhiteSpace(Settings.Default.Username))
+                this.ViewModel.Username = Settings.Default.Username;
+
+            if (!string.IsNullOrWhiteSpace(Settings.Default.ServerIP))
+                this.ViewModel.ServerIP = Settings.Default.ServerIP;
+
+            //if (Settings.Default.ServerPort != null)
+                this.ViewModel.ServerPort = Settings.Default.ServerPort;
+
+            //Hook up command requery
             EventHandler requeryCommands = (s, e) => CommandManager.InvalidateRequerySuggested();
             this.ViewModel.ConnectCommand.CanExecuteChanged += requeryCommands;
 
@@ -60,6 +72,10 @@ namespace WNSChat.Windows
             //};
 
             this.ViewModel.RequestClose += this.Close;
+
+            this.ViewModel.RequestSaveUsername += username => { Settings.Default.Username = username; Settings.Default.Save(); };
+            this.ViewModel.RequestSaveIP += ip => { Settings.Default.ServerIP = ip; Settings.Default.Save(); };
+            this.ViewModel.RequestSavePort += port => { Settings.Default.ServerPort = port; Settings.Default.Save(); };
         }
     }
 }

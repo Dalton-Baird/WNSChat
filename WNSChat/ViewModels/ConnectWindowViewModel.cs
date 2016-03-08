@@ -42,8 +42,12 @@ namespace WNSChat.ViewModels
             this.Dispatcher = dispatcher;
 
             this.ConnectCommand = new ButtonCommand(
-                param =>
+                param => //Connect
                 {
+                    this.RequestSaveUsername?.Invoke(this.Username);
+                    this.RequestSaveIP?.Invoke(this.ServerIP);
+                    this.RequestSavePort?.Invoke(this.ServerPort ?? 9001);
+
                     this.ChatClient = new ChatClientViewModel(this.Dispatcher, this.Username, IPAddress.Parse(this.ServerIP));
 
                     //Connect to the server and pass a lambda expression to request a password, if needed
@@ -52,7 +56,7 @@ namespace WNSChat.ViewModels
                     this.RequestOpenChatWindow?.Invoke(this.ChatClient);
                     this.RequestClose?.Invoke();
                 },
-                param =>
+                param => //CanConnect
                 {
                     IPAddress serverIPAddress;
 
@@ -138,6 +142,9 @@ namespace WNSChat.ViewModels
         public event Func<string, string> RequestShowPasswordDialog;
         public event Action<ChatClientViewModel> RequestOpenChatWindow;
         public event Action RequestClose;
+        public event Action<string> RequestSaveUsername;
+        public event Action<string> RequestSaveIP;
+        public event Action<ushort> RequestSavePort;
 
         #endregion
     }
