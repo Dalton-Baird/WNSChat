@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 using WNSChat.Client.Utilities;
 
 namespace WNSChat.ViewModels
@@ -13,6 +14,8 @@ namespace WNSChat.ViewModels
     {
         /** A dictionary to map property names to their validation code.  The code returns a string error, or null if there is no error. */
         public static readonly Dictionary<string, Func<ConnectWindowViewModel, string>> PropertyRuleMap;
+
+        public Dispatcher Dispatcher;
 
         static ConnectWindowViewModel()
         {
@@ -34,13 +37,20 @@ namespace WNSChat.ViewModels
             PropertyRuleMap.Add("ServerPort",           vm => vm.ServerPort == null                              ? "Server port is not valid."                               : null);
         }
 
-        public ConnectWindowViewModel()
+        public ConnectWindowViewModel(Dispatcher dispatcher)
         {
+            this.Dispatcher = dispatcher;
+
             this.ConnectCommand = new ButtonCommand(
                 param =>
                 {
-                    //TODO
-                    string password = this.RequestShowPasswordDialog?.Invoke("Server Password");
+                    this.ChatClient = new ChatClientViewModel(this.Dispatcher, this.Username, IPAddress.Parse(this.ServerIP));
+
+                    //Connect to the server and pass a lambda expression to request a password, if needed
+                    this.ChatClient.ConnectToServer(() => this.RequestShowPasswordDialog?.Invoke("Server Password"));
+
+                    this.RequestOpenChatWindow?.Invoke(this.ChatClient);
+                    this.RequestClose?.Invoke();
                 },
                 param =>
                 {
@@ -90,6 +100,17 @@ namespace WNSChat.ViewModels
             }
         }
 
+        protected ChatClientViewModel _ChatClient;
+        public ChatClientViewModel ChatClient
+        {
+            get { return this._ChatClient; }
+            set
+            {
+                this._ChatClient = value;
+                this.OnPropertyChanged(nameof(this.ChatClient));
+            }
+        }
+
         #endregion
 
         #region Commands
@@ -115,6 +136,8 @@ namespace WNSChat.ViewModels
         }
 
         public event Func<string, string> RequestShowPasswordDialog;
+        public event Action<ChatClientViewModel> RequestOpenChatWindow;
+        public event Action RequestClose;
 
         #endregion
     }

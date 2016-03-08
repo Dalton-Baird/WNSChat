@@ -25,11 +25,10 @@ namespace WNSChat.Windows
     {
         private MainWindowViewModel ViewModel;
 
-        public MainWindow()
+        public MainWindow(ChatClientViewModel chatClient)
         {
             InitializeComponent();
-            this.ViewModel = new MainWindowViewModel(this.Dispatcher, "TestUsername", IPAddress.Loopback); //TODO: have a connect screen handle this
-            this.ViewModel.ConnectToServer();
+            this.ViewModel = new MainWindowViewModel(chatClient);
             this.Loaded += (s, e) => this.DataContext = this.ViewModel;
 
             EventHandler requeryCommands = (s, e) => CommandManager.InvalidateRequerySuggested();
@@ -38,8 +37,8 @@ namespace WNSChat.Windows
             //Hook up window closed handler
             this.Closing += (s, e) =>
             {
-                if (this.ViewModel.DisconnectCommand.CanExecute(null))
-                    this.ViewModel.DisconnectCommand.Execute("Client closed");
+                if (this.ViewModel.ChatClient.DisconnectCommand.CanExecute(null))
+                    this.ViewModel.ChatClient.DisconnectCommand.Execute("Client closed");
             };
 
             //ListBox auto scroll
@@ -54,6 +53,9 @@ namespace WNSChat.Windows
             this.ViewModel.RequestConfirmDelete += s => MessageBoxUtils.BoolConfirmDelete(s);
             this.ViewModel.RequestConfirmYesNo += s => MessageBoxUtils.BoolConfirmYN(s);
             this.ViewModel.RequestShowMessage += s => MessageBoxUtils.ShowMessage(s);
+
+            this.ViewModel.RequestShowConnectWindow += ccvm => new ConnectWindow(ccvm).Show();
+            this.ViewModel.RequestClose += this.Close;
         }
     }
 }

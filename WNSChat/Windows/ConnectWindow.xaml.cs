@@ -22,10 +22,18 @@ namespace WNSChat.Windows
     {
         private ConnectWindowViewModel ViewModel;
 
-        public ConnectWindow()
+        public ConnectWindow() : this(null) { } //Unfortunately, WPF doesn't support default constructor arguments :(
+
+        public ConnectWindow(ChatClientViewModel chatClient)
         {
             InitializeComponent();
-            this.ViewModel = new ConnectWindowViewModel();
+
+            if (chatClient != null) //If I ever decide to reuse the chat client, do it here
+            {
+                //If the chat client needs to be disposed, do it here
+            }
+
+            this.ViewModel = new ConnectWindowViewModel(this.Dispatcher);
             this.Loaded += (s, e) => this.DataContext = this.ViewModel;
 
             EventHandler requeryCommands = (s, e) => CommandManager.InvalidateRequerySuggested();
@@ -38,6 +46,9 @@ namespace WNSChat.Windows
                 passwordDialog.ShowDialog();
                 return passwordDialog.GetPassword();
             };
+
+            this.ViewModel.RequestOpenChatWindow += ccvm => new MainWindow(ccvm).Show();
+            this.ViewModel.RequestClose += this.Close;
         }
     }
 }

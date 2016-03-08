@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:WNSChat.Windows"
         xmlns:common="clr-namespace:WNSChat.Common;assembly=WNSChat.Common"
         mc:Ignorable="d"
-        Height="384" Width="512" MinHeight="384" MinWidth="384">
+        Height="384" Width="512" MinHeight="384" MinWidth="384" WindowStartupLocation="CenterOwner">
 
     <Window.Title>
         <MultiBinding StringFormat="WNS Chat - v{0} - Protocol Version: {1}">
@@ -32,7 +32,7 @@
             <TextBlock Grid.Column="0" Margin="4,4,4,4" Foreground="#EEEEEE">
                 <TextBlock.Text>
                     <MultiBinding StringFormat="Username: {0}">
-                        <Binding Path="Username"/>
+                        <Binding Path="ChatClient.Username"/>
                     </MultiBinding>
                 </TextBlock.Text>
             </TextBlock>
@@ -40,13 +40,13 @@
             <TextBlock Grid.Column="2" Margin="4,4,4,4" Foreground="#EEEEEE" TextAlignment="Right">
                 <TextBlock.Text>
                     <MultiBinding StringFormat="Server: {0}">
-                        <Binding Path="Server.ServerName"/>
+                        <Binding Path="ChatClient.Server.ServerName"/>
                     </MultiBinding>
                 </TextBlock.Text>
             </TextBlock>
         </Grid>
 
-        <ListBox x:Name="MessageListBox" Grid.Row="1" Margin="4,4,4,4" Background="#555555" Foreground="#EEEEEE" ItemsSource="{Binding Path=MessageLog}" Focusable="False"/>
+        <ListBox x:Name="MessageListBox" Grid.Row="1" Margin="4,4,4,4" Background="#555555" Foreground="#EEEEEE" ItemsSource="{Binding Path=ChatClient.MessageLog}" Focusable="False"/>
 
         <Grid Grid.Row="2" Background="#444444">
             <Grid.ColumnDefinitions>
@@ -54,9 +54,9 @@
                 <ColumnDefinition Width="60"/>
             </Grid.ColumnDefinitions>
 
-            <TextBox Grid.Column="0" Height="52" Margin="4,4,4,4" Background="#555555" ToolTip="Enter a message" Foreground="#EEEEEE" Text="{Binding Path=Message, UpdateSourceTrigger=PropertyChanged}"/>
+            <TextBox Grid.Column="0" Height="52" Margin="4,4,4,4" Background="#555555" ToolTip="Enter a message" Foreground="#EEEEEE" Text="{Binding Path=ChatClient.Message, UpdateSourceTrigger=PropertyChanged}"/>
             <Button Grid.Column="1" Content="Send" Width="52" Margin="4,4,4,4" HorizontalAlignment="Right" Background="#333333" Foreground="#EEEEEE"
-                    IsDefault="True" ToolTip="Send the message" Command="{Binding SendCommand, Mode=OneWay}"/>
+                    IsDefault="True" ToolTip="Send the message" Command="{Binding ChatClient.SendCommand, Mode=OneWay}"/>
         </Grid>
     </Grid>
 </Window>

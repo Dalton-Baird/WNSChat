@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WNSChat.Windows"
         mc:Ignorable="d"
-        Title="WNS Chat - Connect" Height="256" Width="384" MinHeight="256" MinWidth="384" ResizeMode="CanMinimize">
+        Title="WNS Chat - Connect" Height="256" Width="384" MinHeight="256" MinWidth="384" ResizeMode="CanMinimize" WindowStartupLocation="CenterOwner">
     
     <Grid Background="#444444" FocusManager.FocusedElement="{Binding ElementName=UsernameBox}">
         <Grid.RowDefinitions>
