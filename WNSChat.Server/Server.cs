@@ -11,6 +11,7 @@ using WNSChat.Common.Packets;
 using WNSChat.Common;
 using WNSChat.Common.Utilities;
 using WNSChat.Common.Exceptions;
+using NDesk.Options;
 
 namespace WNSChat.Server
 {
@@ -30,16 +31,83 @@ namespace WNSChat.Server
 
         public static void Main(string[] args)
         {
-            new Server().Run();
+            string serverName = "Untitled Server";
+            string password = null;
+            ushort port = 9001;
+            IPAddress ipAddress = IPAddress.Any;
+            bool showHelp = false;
+
+            var os = new OptionSet() //Create the OptionSet to parse the arguments
+            {
+                { "n|name=", "The {NAME} of the server.", v => serverName = v },
+                { "pass|password=", "The {PASSWORD} required to log on to the server.", v => password = v },
+                { "p|port=", "The {PORT} that the server will listen on.", (ushort v) => port = v },
+                { "ip|ip_address=", "The {IP} address that the server will bind to.", (string v) =>
+                    {
+                        try
+                        {
+                            ipAddress = IPAddress.Parse(v);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new OptionException($"Failed to parse IP address \"{v}\".", "ip_address", ex);
+                        }
+                    }
+                },
+                { "h|help|?", "Show this message and exit", v => showHelp = v != null }
+            };
+
+            List<string> extraArguments;
+
+            try //Try to parse the arguments
+            {
+                extraArguments = os.Parse(args);
+            }
+            catch (OptionException ex)
+            {
+                Console.Write("Server: ");
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("Try \"Server --help\" for more information");
+                return;
+            }
+
+            if ((extraArguments?.Count ?? 0) > 0) //Show the arguments that weren't parsed
+            {
+                Console.WriteLine("Ignoring extra arguments:");
+
+                foreach (string extraArg in extraArguments)
+                    Console.WriteLine($"\t{extraArg}");
+            }
+
+            if (showHelp) //If the help needs to be shown, show it and exit
+            {
+                ShowHelp(os);
+                return;
+            }
+
+            new Server(serverName, password, port, ipAddress).Run(); //Create and start the server
+        }
+
+        public Server(string serverName, string password, ushort port, IPAddress ipAddress)
+        {
+            this.ServerName = serverName;
+            this.PasswordHash = password != null ? MathUtils.SHA1_Hash(password) : null;
+            this.Port = port;
+            this.IPAddress = ipAddress;
+        }
+
+        public static void ShowHelp(OptionSet os)
+        {
+            Console.WriteLine();
+            Console.WriteLine("Usage: Server [OPTIONS]+");
+            Console.WriteLine("Start up a WNS Chat server that WNS Chat clients can join,");
+            Console.WriteLine("optionally with a required password.");
+            Console.WriteLine();
+            os.WriteOptionDescriptions(Console.Out);
         }
 
         public void Run()
         {
-            this.IPAddress = IPAddress.Any;
-            this.Port = 9001;
-            this.PasswordHash = MathUtils.SHA1_Hash("password"); //TODO: allow changing the password
-            this.ServerName = "Untitled Server"; //TODO: allow changing the server name
-
             this.ClientsLock = new object();
             this.Log = Console.WriteLine; //Set up the log, can be changed later
 
@@ -95,8 +163,10 @@ namespace WNSChat.Server
             if (client == null)
                 throw new ArgumentNullException("obj", "Given client was null!");
 
+            bool passwordRequired = this.PasswordHash != null;
+
             //Send a server info packet
-            NetworkManager.Instance.WritePacket(client.Stream, new PacketServerInfo() { ProtocolVersion = NetworkManager.ProtocolVersion, UserCount = this.Clients.Count, PasswordRequired = this.PasswordHash != null, ServerName = this.ServerName});
+            NetworkManager.Instance.WritePacket(client.Stream, new PacketServerInfo() { ProtocolVersion = NetworkManager.ProtocolVersion, UserCount = this.Clients.Count, PasswordRequired = passwordRequired, ServerName = this.ServerName});
 
             try //Read the login packet
             {
@@ -120,7 +190,7 @@ namespace WNSChat.Server
                         throw new LoginFailedException("Out of date server.  Server protocol version: {NetworkManager.ProtocolVersion}.  Client protocol version: {packetLogin.ProtocolVersion}");
                     }
 
-                    if (!string.Equals(packetLogin.PasswordHash, this.PasswordHash)) //If the password was incorrect
+                    if (passwordRequired && !string.Equals(packetLogin.PasswordHash, this.PasswordHash)) //If the password was incorrect
                     {
                         this.LogToClient(client, "Incorrect password.");
                         throw new LoginFailedException("Incorrect password");
