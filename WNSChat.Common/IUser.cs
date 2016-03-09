@@ -14,5 +14,8 @@ namespace WNSChat.Common
 
         /** The user's permission level */
         PermissionLevel PermissionLevel { get; set; }
+
+        /** Sends the user a message */
+        void SendMessage(string message);
     }
 }

@@ -11,6 +11,9 @@ namespace WNSChat.Common.Commands
     /// </summary>
     public static class Commands
     {
+        /** A lsit of all of the commands */
+        public static List<Command> AllCommands { get; } = new List<Command>();
+
         public static Command Help { get; } = new Command("help", "Shows help about the commands you can enter", "/help", PermissionLevel.USER);
         public static Command MeCommand { get; } = new Command("me", "Allows you to say something in third person.", "/me does some action.", PermissionLevel.USER);
         public static Command SetUserLevel { get; } = new Command("setUserLevel", "Sets a user's authority level.", "/setUserLevel USERNAME USER|OPERATOR|ADMIN|SERVER", PermissionLevel.ADMIN);
@@ -24,5 +27,6 @@ namespace WNSChat.Common.Commands
         public static Command Password { get; } = new Command("password", "Changes the server's password.", "/password PASSWORD", PermissionLevel.ADMIN);
         public static Command ServerName { get; } = new Command("serverName", "Changes the server's name.", "/serverName My Awesome Server", PermissionLevel.ADMIN);
         public static Command Sudo { get; } = new Command("sudo", "Makes another user execute a command, optionally with your permission level.", "/sudo [useMyPermissions] COMMAND", PermissionLevel.OPERATOR);
+        public static Command Logout { get; } = new Command("logout", "Logs you out of the server.", "/logout", PermissionLevel.USER);
     }
 }

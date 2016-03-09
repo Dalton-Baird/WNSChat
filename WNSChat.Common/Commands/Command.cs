@@ -33,6 +33,8 @@ namespace WNSChat.Common.Commands
             this.Description = description;
             this.Usage = usage;
             this.PermissionLevel = permissionLevel;
+
+            Commands.AllCommands.Add(this); //Add this command to the list of commands
         }
 
         /// <summary>

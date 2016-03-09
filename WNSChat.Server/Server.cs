@@ -12,6 +12,8 @@ using WNSChat.Common;
 using WNSChat.Common.Utilities;
 using WNSChat.Common.Exceptions;
 using NDesk.Options;
+using WNSChat.Common.Commands;
+using System.Text.RegularExpressions;
 
 namespace WNSChat.Server
 {
@@ -94,6 +96,8 @@ namespace WNSChat.Server
             this.PasswordHash = password != null ? MathUtils.SHA1_Hash(password) : null;
             this.Port = port;
             this.IPAddress = ipAddress;
+
+            this.InitCommands();
         }
 
         public static void ShowHelp(OptionSet os)
@@ -104,6 +108,46 @@ namespace WNSChat.Server
             Console.WriteLine("optionally with a required password.");
             Console.WriteLine();
             os.WriteOptionDescriptions(Console.Out);
+        }
+
+        private void InitCommands()
+        {
+            Commands.Say.Execute += (u, s) =>
+            {
+                this.LogToClients($"{u}: {s}");
+            };
+            Commands.Help.Execute += (u, s) =>
+            {
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append("Available Commands:\n");
+
+                foreach (Command command in Commands.AllCommands)
+                    sb.Append($"\t{command.Name}\t{command.Description}\t{command.Usage}\n");
+
+                sb.Append("\n");
+
+                u.SendMessage(sb.ToString());
+            };
+            Commands.MeCommand.Execute += (u, s) =>
+            {
+                this.LogToClients($"{u.Username} {s}");
+            };
+            Commands.List.Execute += (u, s) =>
+            {
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append("Users online:\n");
+
+                foreach (ClientConnection client in this.Clients)
+                    sb.Append($"\t{client.Username}\n");
+
+                u.SendMessage(sb.ToString());
+            };
+            Commands.Logout.Execute += (u, s) =>
+            {
+                //TODO: detect if the server called this, and throw a command exception
+            };
         }
 
         public void Run()
@@ -150,7 +194,8 @@ namespace WNSChat.Server
         {
             try
             {
-                NetworkManager.Instance.WritePacket(client.Stream, new PacketSimpleMessage() { Message = data });
+                client.SendMessage(data);
+                //NetworkManager.Instance.WritePacket(client.Stream, new PacketSimpleMessage() { Message = data });
             }
             catch (IOException) { }
         }
@@ -255,7 +300,7 @@ namespace WNSChat.Server
             ClientConnection client = obj as ClientConnection;
 
             if (client == null)
-                throw new ArgumentNullException("obj", "Given client was null!");
+                throw new ArgumentNullException(nameof(obj), "Given client was null!");
 
             for (;;) //Infinite loop
             {
@@ -267,9 +312,44 @@ namespace WNSChat.Server
                     if (packet is PacketSimpleMessage)
                     {
                         PacketSimpleMessage packetSimpleMessage = packet as PacketSimpleMessage;
+                        string message = packetSimpleMessage.Message;
 
-                        this.Log($"{client}: {packetSimpleMessage.Message}");
-                        this.LogToClients($"{client}: {packetSimpleMessage.Message}");
+                        try //TODO: move command parsing code to Common so the client can use it for client commands
+                        {
+                            Command command = null;
+                            string restOfCommand = message;
+
+                            if (message.StartsWith("/")) //If it is a command
+                            {
+                                //Matches command names, for example, in "/say Hello World!", it would match "/say"
+                                Match match = Regex.Match(message, @"^\/(\w)+");
+
+                                if (!match.Success)
+                                    throw new CommandException($"Unknown command \"{message}\"");
+
+                                int endOfCommandName = match.Index + match.Length;
+                                string commandName = message.Substring(1, endOfCommandName - 1);
+                                restOfCommand = message.Substring(endOfCommandName).Trim();
+
+                                //Console.WriteLine($"endOfCommandName: {endOfCommandName}, commmandName: \"{commandName}\", restOfCommand: \"{restOfCommand}\"");
+
+                                command = Commands.AllCommands.FirstOrDefault(c => string.Equals(commandName, c.Name));
+
+                                if (command == null)
+                                    throw new CommandException($"Unknown command \"/{commandName}\"");
+                            }
+
+                            if (command == null) //If the command is still null, set it to say
+                                command = Commands.Say;
+
+                            this.Log($"{client}: {message}");
+                            //this.LogToClients($"{client}: {message}");
+                            command.OnExecute(client, restOfCommand);
+                        }
+                        catch (CommandException ex)
+                        {
+                            client.SendMessage($"Command Error: {ex.Message}");
+                        }
                     }
                     else if (packet is PacketDisconnect)
                     {
