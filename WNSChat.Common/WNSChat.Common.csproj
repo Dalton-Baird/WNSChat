@@ -40,7 +40,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commands\Command.cs" />
+    <Compile Include="Commands\CommandException.cs" />
+    <Compile Include="Commands\Commands.cs" />
+    <Compile Include="Commands\CommandSyntaxException.cs" />
+    <Compile Include="Commands\PermissionLevel.cs" />
     <Compile Include="Exceptions\LoginFailedException.cs" />
+    <Compile Include="IUser.cs" />
     <Compile Include="NetworkManager.cs" />
     <Compile Include="Packets\Packet.cs" />
     <Compile Include="Packets\PacketDisconnect.cs" />

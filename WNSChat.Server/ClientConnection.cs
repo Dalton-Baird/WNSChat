@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Net.Sockets;
+using WNSChat.Common;
+using WNSChat.Common.Commands;
 
 namespace WNSChat.Server
 {
-    public class ClientConnection : IDisposable
+    public class ClientConnection : IDisposable, IUser
     {
         /// <summary>
         /// The Socket used for communicating with the client
@@ -19,6 +21,9 @@ namespace WNSChat.Server
 
         /** The client's username */
         public string Username { get; set; }
+
+        /** The client's permission level */
+        public PermissionLevel PermissionLevel { get; set; }
 
         public ClientConnection(Socket socket)
         {
