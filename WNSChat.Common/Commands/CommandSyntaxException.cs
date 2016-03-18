@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WNSChat.Common.Commands
+namespace WNSChat.Common.Cmd
 {
     [Serializable]
     public class CommandSyntaxException : CommandException

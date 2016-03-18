@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WNSChat.Common.Commands
+namespace WNSChat.Common.Cmd
 {
     /// <summary>
     /// A class that holds instances of all of the commands

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WNSChat.Common.Commands
+namespace WNSChat.Common.Cmd
 {
     /** An enum to represent the various command permission levels */
     public enum PermissionLevel
