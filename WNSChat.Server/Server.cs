@@ -189,6 +189,41 @@ namespace WNSChat.Server
 
                 Environment.Exit(0); //Exit the process
             };
+            Commands.Password.Execute += (u, s) =>
+            {
+                string newPassword = s?.Trim() ?? string.Empty;
+                string regexStr = @"^\w*$";
+                Match passwordMatch = Regex.Match(newPassword, regexStr);
+
+                //If the password wasn't of the correct syntax, throw an error
+                if (!passwordMatch.Success)
+                    throw new CommandSyntaxException($"ERROR: Invalid password: \"{newPassword}\". The password must match the regex string \"{regexStr}\".");
+
+                //Set the password
+                if (string.IsNullOrWhiteSpace(newPassword))
+                    this.PasswordHash = string.Empty;
+                else
+                    this.PasswordHash = MathUtils.SHA1_Hash(newPassword);
+
+                this.LogToUsers("Server password changed");
+                this.SendServerInfoUpdates(); //Send all of the users a server info packet
+            };
+            Commands.ServerName.Execute += (u, s) =>
+            {
+                string newName = s?.Trim() ?? string.Empty;
+                string regexStr = @"^.{3,50}$"; //3 chars min, 50 chars max
+                Match nameMatch = Regex.Match(newName, regexStr);
+
+                //If the name wasn't of the correct syntax, throw an error
+                if (!nameMatch.Success)
+                    throw new CommandSyntaxException($"ERROR: Invalid server name \"{newName}\". The name must match the regex string \"{regexStr}\".");
+
+                //Set the server name
+                this.ServerName = newName;
+
+                this.LogToUsers($"Server name changed to \"{this.ServerName}\"");
+                this.SendServerInfoUpdates(); //Send all of the users a server info packet
+            };
         }
 
         public void Run()
@@ -265,6 +300,23 @@ namespace WNSChat.Server
             catch (IOException) { }
         }
 
+        /** Sends a server info packet to the specified client */
+        private void SendServerInfo(ClientConnection client)
+        {
+            bool passwordRequired = !string.IsNullOrWhiteSpace(this.PasswordHash);
+
+            NetworkManager.Instance.WritePacket(client.Stream, new PacketServerInfo() { ProtocolVersion = NetworkManager.ProtocolVersion, UserCount = this.Users.Count, PasswordRequired = passwordRequired, ServerName = this.ServerName });
+        }
+
+        /** Sends server info packets to all connected clients */
+        private void SendServerInfoUpdates()
+        {
+            lock (this.UsersLock)
+                foreach (IUser user in this.Users)
+                    if (user is ClientConnection)
+                        this.SendServerInfo(user as ClientConnection);
+        }
+
         /** Accepts incoming TCP connections and starts threads to listen to them */
         private void AcceptConnectionsThread(object obj)
         {
@@ -294,10 +346,10 @@ namespace WNSChat.Server
             if (client == null)
                 throw new ArgumentNullException("obj", "Given client was null!");
 
-            bool passwordRequired = this.PasswordHash != null;
-
             //Send a server info packet
-            NetworkManager.Instance.WritePacket(client.Stream, new PacketServerInfo() { ProtocolVersion = NetworkManager.ProtocolVersion, UserCount = this.Users.Count, PasswordRequired = passwordRequired, ServerName = this.ServerName});
+            this.SendServerInfo(client);
+
+            bool passwordRequired = !string.IsNullOrWhiteSpace(this.PasswordHash);
 
             try //Read the login packet
             {
@@ -327,7 +379,12 @@ namespace WNSChat.Server
                         throw new LoginFailedException("Incorrect password");
                     }
 
-                    //TODO: deny duplicate client names
+                    //If a user with the same username is already logged on
+                    if (this.Users.Exists(u => string.Equals(u.Username, client.Username, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        this.LogToUser(client, "A user with your username is already on the server.");
+                        throw new LoginFailedException("A user with your username is already on the server.");
+                    }
                 }
                 else if (packet is PacketDisconnect)
                 {
@@ -406,8 +463,9 @@ namespace WNSChat.Server
                             Command command = result.Item1;
                             string restOfCommand = result.Item2;
 
-                            this.Log($"{client}: {message}");
-                            //this.LogToClients($"{client}: {message}");
+                            if (command != Commands.Say) //Log the client's command if it wasn't a say command
+                                this.Log($"{client}: {message}");
+
                             command.OnExecute(client, restOfCommand);
                         }
                         catch (CommandException ex)

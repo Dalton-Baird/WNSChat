@@ -233,23 +233,8 @@ namespace WNSChat.ViewModels
                 {
                     PacketServerInfo serverInfo = packet as PacketServerInfo;
 
-                    //Check protocol versions
-                    if (serverInfo.ProtocolVersion < NetworkManager.ProtocolVersion) //Client is out of date
-                    {
-                        this.Log($"The server is out of date! Client protocol version: {NetworkManager.ProtocolVersion}.  Server protocol version: {serverInfo.ProtocolVersion}.");
-                        NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = "Server out of date" });
-                        throw new Exception("Out of date server.");
-                    }
-                    else if (serverInfo.ProtocolVersion > NetworkManager.ProtocolVersion) //Server is out of date
-                    {
-                        this.Log($"Your client is out of date. Client protocol version: {NetworkManager.ProtocolVersion}.  Server protocol version: {serverInfo.ProtocolVersion}.");
-                        NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = "Client out of date" });
-                        throw new Exception("Out of date client.");
-                    }
-
-                    //Login stuff
-                    this.Server.ServerName = serverInfo.ServerName;
-                    this.OnPropertyChanged(nameof(this.Server));
+                    //Update the client data on the server, and do a version check.  This may throw an exception
+                    this.OnServerInfoUpdate(packet as PacketServerInfo, checkVersion: true);
 
                     string passwordHash = string.Empty;
 
@@ -352,6 +337,10 @@ namespace WNSChat.ViewModels
 
                         return; //Exit thread
                     }
+                    else if (packet is PacketServerInfo)
+                    {
+                        this.OnServerInfoUpdate(packet as PacketServerInfo, checkVersion: false);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -364,6 +353,30 @@ namespace WNSChat.ViewModels
                     break; //Exit the for loop
                 }
             }
+        }
+
+        /** Updates the client's data about the server.  Optionally does a version check and throws an exception if the versions don't match. */
+        public void OnServerInfoUpdate(PacketServerInfo serverInfo, bool checkVersion = false)
+        {
+            if (checkVersion) //Check protocol versions
+            {
+                if (serverInfo.ProtocolVersion < NetworkManager.ProtocolVersion) //Client is out of date
+                {
+                    this.Log($"The server is out of date! Client protocol version: {NetworkManager.ProtocolVersion}.  Server protocol version: {serverInfo.ProtocolVersion}.");
+                    NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = "Server out of date" });
+                    throw new Exception("Out of date server.");
+                }
+                else if (serverInfo.ProtocolVersion > NetworkManager.ProtocolVersion) //Server is out of date
+                {
+                    this.Log($"Your client is out of date. Client protocol version: {NetworkManager.ProtocolVersion}.  Server protocol version: {serverInfo.ProtocolVersion}.");
+                    NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = "Client out of date" });
+                    throw new Exception("Out of date client.");
+                }
+            }
+
+            //Login stuff
+            this.Server.ServerName = serverInfo.ServerName;
+            this.OnPropertyChanged(nameof(this.Server));
         }
 
         /**
