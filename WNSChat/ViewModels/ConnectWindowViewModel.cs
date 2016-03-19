@@ -4,9 +4,11 @@ using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using WNSChat.Client.Utilities;
+using WNSChat.Common;
 
 namespace WNSChat.ViewModels
 {
@@ -32,7 +34,16 @@ namespace WNSChat.ViewModels
             //PropertyRuleMap.Add("PROPERTYNAME",       vm => INVALIDCONDITION                                   ? "ERRORMESSAGE"                                            : null);
 
             //================== Property Name ======== Error Condition ========================================= Error Message =====================================================
-            PropertyRuleMap.Add("Username",             vm => string.IsNullOrWhiteSpace(vm.Username)             ? "Username must be entered."                               : null);
+            PropertyRuleMap.Add("Username",             vm =>
+            {
+                if (string.IsNullOrWhiteSpace(vm.Username))
+                    return "You must enter a username";
+                else if (!Regex.Match(vm.Username, Constants.UsernameRegexStr).Success)
+                    return $"Invalid username, username must match the regex string \"{Constants.UsernameRegexStr}\"";
+                else
+                    return null;
+            });
+
             PropertyRuleMap.Add("ServerIP",             vm => serverIPHasErrors(vm)                              ? "IP address is not valid."                                : null);
             PropertyRuleMap.Add("ServerPort",           vm => vm.ServerPort == null                              ? "Server port is not valid."                               : null);
         }
@@ -58,11 +69,9 @@ namespace WNSChat.ViewModels
                 },
                 param => //CanConnect
                 {
-                    IPAddress serverIPAddress;
+                    bool validationErrors = PropertyRuleMap.Values.Any(check => !string.IsNullOrWhiteSpace(check(this)));
 
-                    return !string.IsNullOrWhiteSpace(this.Username)
-                        && IPAddress.TryParse(this.ServerIP, out serverIPAddress)
-                        && this.ServerPort != null;
+                    return !validationErrors;
                 });
         }
 

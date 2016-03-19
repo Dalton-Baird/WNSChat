@@ -224,6 +224,82 @@ namespace WNSChat.Server
                 this.LogToUsers($"Server name changed to \"{this.ServerName}\"");
                 this.SendServerInfoUpdates(); //Send all of the users a server info packet
             };
+            Commands.Kick.Execute += (u, s) =>
+            {
+                if (s == null) //Make sure s is not null
+                    s = string.Empty;
+
+                //string[] parameters = s.Split(new char[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+                //string username = parameters.Length >= 1 ? parameters[0] : string.Empty;
+                //string reason = parameters.Length >= 2 ? parameters[1] : "for no apparent reason.";
+
+                string cmdRegex = $@"({Constants.UsernameRegexStrInline})(?:\s|$)(.*)"; //First group: username Second group: rest of command
+                Match match = Regex.Match(s, cmdRegex); //Run the regex
+                string username = null;
+                string reason = null;
+
+                if (match.Success) //If the parameters were matched
+                {
+                    GroupCollection groups = match.Groups;
+
+                    if (groups.Count != 3) //First group is the whole thing
+                        throw new CommandSyntaxException($"Invalid command syntax, username and an optional reason expected.");
+                    //{
+                    //    StringBuilder sb = new StringBuilder($"Invalid command syntax, username and an optional reason expected.");
+
+                    //    sb.Append($"\nDEBUG: Groups: (Count: {groups.Count})\n");
+
+                    //    foreach (var obj in groups)
+                    //        sb.Append($"\t\"{obj}\"\n");
+
+                    //    throw new CommandSyntaxException(sb.ToString());
+                    //}
+
+                    //Get the username and reason from the groups
+                    username = groups[1].Value;
+                    reason = groups[2].Value;
+
+                    if (string.IsNullOrWhiteSpace(reason)) //Default reason
+                        reason = "for no apparent reason.";
+                }
+                else
+                {
+                    throw new CommandSyntaxException($"Invalid command syntax, username must match the regex string \"{Constants.UsernameRegexStrInline}\"");
+                }
+
+                //if (!Regex.Match(username, Constants.UsernameRegexStr).Success)
+                //    throw new CommandSyntaxException($"Invalid username \"{username}\". Username must match the regex string \"{Constants.UsernameRegexStr}\"");
+
+                IUser userToKick = this.FindUserByUsername<IUser>(username); //Find the user to kick
+
+                if (userToKick == null)
+                    throw new CommandException("User not found");
+
+                if (userToKick == this.ServerConsole)
+                    throw new CommandException("You can't kick the server.");
+
+                if (!(userToKick is ClientConnection))
+                    throw new CommandException("You can only kick remote clients.");
+
+                //Kick the user (which is guaranteed to be a ClientConnection at this point)
+                lock (this.UsersLock)
+                {
+                    this.Users.Remove(userToKick);
+
+                    userToKick.SendMessage($"{u.Username} kicked you from the server {reason}");
+
+                    ClientConnection client = userToKick as ClientConnection;
+
+                    if (client.IsAlive)
+                    {
+                        NetworkManager.Instance.WritePacket(client.Stream, new PacketDisconnect() { Reason = $"{u.Username} kicked you from the server {reason}" });
+                        client.Close();
+                        client.Dispose();
+                    }
+
+                    this.LogToUsers($"{u.Username} kicked {userToKick.Username} from the server {reason}");
+                }
+            };
         }
 
         public void Run()
@@ -288,6 +364,12 @@ namespace WNSChat.Server
             {
                 throw new Exception("Error encountered in server loop", ex);
             }
+        }
+
+        /** Find the user of the specified type with the specified username */
+        private U FindUserByUsername<U>(string username) where U : IUser
+        {
+            return (U) this.Users.FirstOrDefault(u => u is U && string.Equals(u.Username, username));
         }
 
         /** Logs to a user */
@@ -371,6 +453,13 @@ namespace WNSChat.Server
                     {
                         this.LogToUser(client, $"This server is out of date. Server protocol version: {NetworkManager.ProtocolVersion}.  Your protocol version: {packetLogin.ProtocolVersion}.");
                         throw new LoginFailedException("Out of date server.  Server protocol version: {NetworkManager.ProtocolVersion}.  Client protocol version: {packetLogin.ProtocolVersion}");
+                    }
+
+                    //If the username is invalid
+                    if (!Regex.Match(client.Username, Constants.UsernameRegexStr).Success)
+                    {
+                        this.LogToUser(client, $"Invalid username \"{client.Username}\". Username must match the regex string \"{Constants.UsernameRegexStr}\"");
+                        throw new LoginFailedException($"Invalid username \"{client.Username}\". Username must match the regex string \"{Constants.UsernameRegexStr}\"");
                     }
 
                     if (passwordRequired && !string.Equals(packetLogin.PasswordHash, this.PasswordHash)) //If the password was incorrect
