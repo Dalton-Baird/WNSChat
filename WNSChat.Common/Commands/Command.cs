@@ -76,6 +76,11 @@ namespace WNSChat.Common.Cmd
             return this.Name;
         }
 
+        public void ClearExecuteHandlers()
+        {
+            this.Execute = null;
+        }
+
         /// <summary>
         /// Fired when the command is executed.  CommandExceptions thrown here will be caught
         /// by the system.  This will only be fired if the user has the appropriate permissions.

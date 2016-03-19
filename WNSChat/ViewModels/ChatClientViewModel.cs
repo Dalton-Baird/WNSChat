@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Windows.Threading;
 using WNSChat.Client.Utilities;
 using WNSChat.Common;
+using WNSChat.Common.Cmd;
 using WNSChat.Common.Packets;
 using WNSChat.Common.Utilities;
 using WNSChat.Utilities;
@@ -26,6 +27,9 @@ namespace WNSChat.ViewModels
         /** The TCP client */
         protected TcpClient Client;
 
+        /** The client user instance */
+        protected ClientUser ClientUser;
+
         /** The stream to the server */
         //Stream ServerStream;
 
@@ -37,6 +41,7 @@ namespace WNSChat.ViewModels
             this.Username = username;
             this.ServerIP = serverIP;
             this.ServerPort = port;
+            this.ClientUser = new ClientUser(this) { PermissionLevel = PermissionLevel.USER, Username = username };
 
             this.Log = s =>
             {
@@ -50,7 +55,20 @@ namespace WNSChat.ViewModels
             param => //OnSend
             {
                 if (this.Server?.Stream != null)
-                    NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketSimpleMessage() { Message = this.Message });
+                {
+                    try //Try to parse the command
+                    {
+                        Tuple<Command, string> result = ChatUtils.ParseCommand(this.ClientUser, this.Message);
+                        Command command = result.Item1;
+                        string restOfCommand = result.Item2;
+
+                        command.OnExecute(this.ClientUser, restOfCommand);
+                    }
+                    catch (CommandException ex)
+                    {
+                        this.ClientUser.SendMessage($"Command Error: {ex.Message}");
+                    }
+                }
 
                 this.Message = string.Empty;
             },
@@ -73,6 +91,38 @@ namespace WNSChat.ViewModels
             {
                 return this.Server?.Stream != null;
             });
+
+            this.InitCommands();
+        }
+
+        private void InitCommands()
+        {
+            List<Command> commandsToNotSend = new List<Command>();
+
+            Commands.Say.Execute += (u, s) =>
+            {
+                NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketSimpleMessage() { Message = s });
+            };
+            commandsToNotSend.Add(Commands.Say);
+
+            Commands.Logout.Execute += (u, s) =>
+            {
+                string disconnectReason = "Logging out";
+                if (this.DisconnectCommand.CanExecute(disconnectReason))
+                    this.DisconnectCommand.Execute(disconnectReason);
+            };
+            commandsToNotSend.Add(Commands.Logout);
+
+            //Hook up unhandled commands to the say command so that the server can handle them
+            foreach (Command command in Commands.AllCommands)
+                if (!commandsToNotSend.Contains(command))
+                    command.Execute += (u, s) => Commands.Say.OnExecute(u, $"/{command.Name} {s}");
+        }
+
+        private void UnInitCommands()
+        {
+            foreach (Command command in Commands.AllCommands)
+                command.ClearExecuteHandlers();
         }
 
         #endregion
@@ -260,6 +310,8 @@ namespace WNSChat.ViewModels
                 this.SendCommand.OnCanExecuteChanged(this); //The send button's CanSend conditions changed
                 this.DisconnectCommand.OnCanExecuteChanged(this); //The disconnect command's CanDisconnect conditions changed
 
+                this.UnInitCommands(); //Remove the command handlers
+
                 this.Client?.Close();
                 this.Client?.Dispose();
                 this.Server?.Close();
@@ -303,10 +355,13 @@ namespace WNSChat.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    this.Log($"Error handling data from server!\n{ex}");
-                    //continue;
-                    this.DisconnectFromServer($"Error handling data from server: {ex.Message}", clientReasonIsBad: true);
-                    break;
+                    if (this.Server != null && this.Server.Stream != null) //Only show the errors and disconnect if the server exists
+                    {
+                        this.Log($"Error handling data from server!\n{ex}");
+                        this.DisconnectFromServer($"Error handling data from server: {ex.Message}", clientReasonIsBad: true);
+                    }
+
+                    break; //Exit the for loop
                 }
             }
         }
