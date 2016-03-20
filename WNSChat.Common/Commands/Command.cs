@@ -43,9 +43,10 @@ namespace WNSChat.Common.Cmd
         /// </summary>
         /// <param name="user">The command user</param>
         /// <param name="restOfLine">The rest of the line that the command was entered on</param>
-        public void OnExecute(IUser user, string restOfLine)
+        /// <param name="permissionLevelOverride">Use this to override the permission level of the user</param>
+        public void OnExecute(IUser user, string restOfLine, PermissionLevel? permissionLevelOverride = null)
         {
-            if (this.CanUserExecuteCommand(user))
+            if (this.CanUserExecuteCommand(user) || permissionLevelOverride.HasValue && permissionLevelOverride.Value >= this.PermissionLevel)
                 this.Execute?.Invoke(user, restOfLine);
             else
                 throw new CommandException($"You do not have permission to use this command! Your permission level: {user.PermissionLevel}, Required: {this.PermissionLevel}");

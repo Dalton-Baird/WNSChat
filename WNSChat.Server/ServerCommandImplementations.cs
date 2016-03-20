@@ -292,6 +292,41 @@ namespace WNSChat.Server
 
                 NetworkManager.Instance.WritePacket(clientToPing.Stream, packet); //Send the packet
             };
+
+            Commands.Sudo.Execute += (u, s) =>
+            {
+                var argMatchers = new Tuple<string, bool>[]
+                {
+                    new Tuple<string, bool>(Constants.UsernameRegexStrInline, true),
+                    new Tuple<string, bool>("(?:useMyPermissions)?", false),
+                    new Tuple<string, bool>(@"\/.*", true)
+                };
+
+                //Parse the command arguments
+                IEnumerable<string> parameters = CommandUtils.ParseCommandArgs(s, $"Invalid command syntax, type /help for more info.", argMatchers);
+
+                string username = parameters.ElementAtOrDefault(0);
+                string useMyPermissionsStr = parameters.ElementAtOrDefault(1);
+                string commandStr = parameters.ElementAtOrDefault(2);
+
+                IUser userToSudo = this.FindUserByUsername<IUser>(username);
+                bool useMyPermissions = string.Equals(useMyPermissionsStr, "useMyPermissions");
+
+                if (userToSudo == null)
+                    throw new CommandException($"User \"{username}\" not found");
+
+                Tuple<Command, string> result = ChatUtils.ParseCommand(userToSudo, commandStr);
+                Command command = result.Item1;
+                string restOfCommand = result.Item2;
+
+                if (command.PermissionLevel > u.PermissionLevel) //You can't use /sudo to run a command that you can't run yourself
+                    throw new CommandException($"You do not have permission to make user \"{userToSudo.Username}\" run that command! Your permission level: {u.PermissionLevel}, {userToSudo.Username}'s permission level: {userToSudo.PermissionLevel}, command permission level: {command.PermissionLevel}.");
+
+                if (useMyPermissions) //If the user should use this user's permission level
+                    command.OnExecute(userToSudo, restOfCommand, u.PermissionLevel);
+                else
+                    command.OnExecute(userToSudo, restOfCommand);
+            };
         }
 
         private void UnInitCommands()
