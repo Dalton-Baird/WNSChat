@@ -13,12 +13,15 @@ namespace WNSChat.Common.Utilities
         /// <summary>
         /// Parses the command arguments, returning the parsed strings.  Note: Optional parameters MUST come
         /// after all required parameters!
+        /// 
+        /// Usage: Use IEnumerable::ElementAtOrDefault(index) to get the possibly null values of each parameter
         /// </summary>
         /// <param name="line">The line to parse</param>
+        /// <param name="errorStr">The error message for the thrown exception if the input doesn't match the regular expression</param>
         /// <param name="argMatchers">Any amount of argument matchers, as Tuples.  The string is the regex
         /// to match the argument, the bool is whether the argument is required.</param>
         /// <returns>The parsed strings</returns>
-        public static IEnumerable<string> ParseCommandArgs(string line, params Tuple<string, bool>[] argMatchers)
+        public static IEnumerable<string> ParseCommandArgs(string line, string errorStr, params Tuple<string, bool>[] argMatchers)
         {
             if (line == null) //Make sure this isn't null
                 line = string.Empty;
@@ -30,11 +33,6 @@ namespace WNSChat.Common.Utilities
 
             foreach (var argMatcher in argMatchers)
             {
-                //if (argMatcher.Item2) //If this argument is required
-                //    sb.Append(@"(?:\s)"); //Match whitespace
-                //else
-                //    sb.Append(@"(?:\s|^)"); //Match whitespace or the beginning of the line
-
                 //TODO: how to get required to work
                 if (isFirst)
                     sb.Append(@"\s*"); //Match 0 or more whitespace
@@ -51,18 +49,24 @@ namespace WNSChat.Common.Utilities
             if (match.Success) //If the parameters were matched
             {
                 //DEBUG
-                Console.WriteLine($"DEBUG: dumping groups.  Total: {match.Groups.Count}");
+                //Console.WriteLine($"DEBUG: dumping groups.  Total: {match.Groups.Count}");
 
-                for (int i = 0; i < match.Groups.Count; i++)
-                    Console.WriteLine($"\tGroups[{i}].Value: \"{match.Groups[i].Value}\"");
+                //for (int i = 0; i < match.Groups.Count; i++)
+                //    Console.WriteLine($"\tGroups[{i}].Value: \"{match.Groups[i].Value}\"");
 
                 for (int groupID = 1; groupID < match.Groups.Count; groupID++) //Return the group substrings
                     yield return match.Groups[groupID].Value;
             }
             else
             {
-                throw new CommandSyntaxException($"Invalid command syntax, parameters must match the regex string \"{regexStr}\"");
+                if (errorStr == null)
+                    errorStr = $"Invalid command syntax, parameters must match the regex string \"{regexStr}\"";
+
+                throw new CommandSyntaxException(errorStr);
             }
         }
+
+        /** Overloaded version that doesn't take an error string */
+        public static IEnumerable<string> ParseCommandArgs(string line, params Tuple<string, bool>[] argMatchers) => ParseCommandArgs(line, null, argMatchers);
     }
 }

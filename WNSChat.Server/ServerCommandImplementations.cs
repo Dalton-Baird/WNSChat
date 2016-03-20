@@ -200,7 +200,8 @@ namespace WNSChat.Server
                     new Tuple<string, bool>(".*", false)
                 };
 
-                IEnumerable<string> parameters = CommandUtils.ParseCommandArgs(s, argMatchers); //Parse the command arguments
+                //Parse the command arguments
+                IEnumerable<string> parameters = CommandUtils.ParseCommandArgs(s, $"Invalid command syntax, username must match the regex string \"{Constants.UsernameRegexStrInline}\"", argMatchers);
 
                 string username = parameters.ElementAtOrDefault(0) ?? string.Empty;
                 string reason = parameters.ElementAtOrDefault(1) ?? "for no apparent reason.";
@@ -234,6 +235,62 @@ namespace WNSChat.Server
 
                     this.LogToUsers($"{u.Username} kicked {userToKick.Username} from the server {reason}");
                 }
+            };
+
+            Commands.Tell.Execute += (u, s) =>
+            {
+                var argMatchers = new Tuple<string, bool>[]
+                {
+                    new Tuple<string, bool>(Constants.UsernameRegexStrInline, true),
+                    new Tuple<string, bool>(".*", false)
+                };
+
+                //Parse the command arguments
+                IEnumerable<string> parameters = CommandUtils.ParseCommandArgs(s, $"Invalid command syntax, username must match the regex string \"{Constants.UsernameRegexStrInline}\"", argMatchers);
+
+                string username = parameters.ElementAtOrDefault(0) ?? string.Empty;
+                string message = parameters.ElementAtOrDefault(1) ?? string.Empty;
+
+                IUser userToMessage = this.FindUserByUsername<IUser>(username); //Find the user to message
+
+                if (userToMessage == null)
+                    throw new CommandException($"User \"{username}\" not found");
+
+                if (string.IsNullOrWhiteSpace(message))
+                    throw new CommandSyntaxException("Message must not be empty!");
+
+                string formattedMessage = $"{u.Username} -> {userToMessage.Username}: {message}";
+
+                //Send the user and the server the message
+                u.SendMessage(formattedMessage); //Send the message to the user that sent it so that they can see it
+
+                if (userToMessage != u) //Only send the message if it is not to themselves.  That will get handled above
+                    userToMessage.SendMessage(formattedMessage); //Send the message to the specified user
+
+                if (userToMessage != this.ServerConsole && u != this.ServerConsole) //Only send the server the message if it isn't already being sent to them
+                    this.ServerConsole.SendMessage(formattedMessage);
+            };
+
+            Commands.Ping.Execute += (u, s) =>
+            {
+                string usernameToPing = s.Trim();
+
+                IUser userToPing = this.FindUserByUsername<IUser>(usernameToPing);
+
+                if (userToPing == null)
+                    throw new CommandException($"Cannot find user \"{usernameToPing}\"");
+
+                if (!(userToPing is ClientConnection))
+                    throw new CommandException("The server can only ping clients!");
+
+                ClientConnection clientToPing = userToPing as ClientConnection;
+
+                PacketPing packet = new PacketPing()
+                { DestinationUsername = usernameToPing, PacketState = PacketPing.State.GOING_TO, SendingUsername = u.Username };
+
+                packet.AddTimestamp(u.Username); //Add a timestamp now
+
+                NetworkManager.Instance.WritePacket(clientToPing.Stream, packet); //Send the packet
             };
         }
 

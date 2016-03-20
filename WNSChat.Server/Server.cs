@@ -394,6 +394,54 @@ namespace WNSChat.Server
                         client.Dispose();
                         return; //Exit thread
                     }
+                    else if (packet is PacketPing)
+                    {
+                        PacketPing packetPing = packet as PacketPing;
+
+                        packetPing.AddTimestamp(this.ServerConsole.Username); //Add a timestamp
+
+                        if (packetPing.PacketState == PacketPing.State.GOING_TO) //The packet is going somewhere
+                        {
+                            IUser destinationUser = this.FindUserByUsername<IUser>(packetPing.DestinationUsername);
+
+                            if (destinationUser == null)
+                                packetPing.PacketState = PacketPing.State.GOING_BACK; //Send the packet back
+
+                            if (destinationUser is ClientConnection) //It is going to a client
+                            {
+                                ClientConnection destinationClient = destinationUser as ClientConnection;
+
+                                NetworkManager.Instance.WritePacket(destinationClient.Stream, packetPing); //Send the packet to the destination user
+                            }
+                            else if (destinationUser is ServerConsoleUser) //It has arrived
+                            {
+                                packetPing.PacketState = PacketPing.State.GOING_BACK; //Send it back
+                            }
+                        }
+
+                        if (packetPing.PacketState == PacketPing.State.GOING_BACK) //The packet should go back to the user
+                        {
+                            IUser sendingUser = this.FindUserByUsername<IUser>(packetPing.SendingUsername);
+
+                            if (sendingUser != null)
+                            {
+                                if (sendingUser is ClientConnection) //Send it back to the client
+                                {
+                                    ClientConnection sendingClient = sendingUser as ClientConnection;
+
+                                    NetworkManager.Instance.WritePacket(sendingClient.Stream, packetPing); //Send the packet back to them
+                                }
+                                else if (sendingUser is ServerConsoleUser) //It has arrived
+                                {
+                                    sendingUser.SendMessage(packetPing.Trace()); //Print the ping trace
+                                }
+                            }
+                            else
+                            {
+                                this.Log($"ERROR: Got a ping packet from user \"{client.Username}\" that doesn't appear to originate from any user. Originating user: \"{packetPing.SendingUsername}\"");
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {

@@ -32,6 +32,19 @@ namespace WNSChat.ViewModels
             };
             commandsToNotSend.Add(Commands.Logout);
 
+            Commands.Ping.Execute += (u, s) =>
+            {
+                string usernameToPing = s.Trim();
+
+                PacketPing packet = new PacketPing()
+                { DestinationUsername = usernameToPing, PacketState = PacketPing.State.GOING_TO, SendingUsername = u.Username };
+
+                packet.AddTimestamp(u.Username); //Add a timestamp now
+
+                NetworkManager.Instance.WritePacket(this.Server.Stream, packet); //Send the packet
+            };
+            commandsToNotSend.Add(Commands.Ping);
+
             //Hook up unhandled commands to the say command so that the server can handle them
             foreach (Command command in Commands.AllCommands)
                 if (!commandsToNotSend.Contains(command))

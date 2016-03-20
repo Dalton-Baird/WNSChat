@@ -314,6 +314,31 @@ namespace WNSChat.ViewModels
                     {
                         this.OnServerInfoUpdate(packet as PacketServerInfo, checkVersion: false);
                     }
+                    else if (packet is PacketPing)
+                    {
+                        PacketPing packetPing = packet as PacketPing;
+
+                        packetPing.AddTimestamp(this.ClientUser.Username); //Add a timestamp
+
+                        if (packetPing.PacketState == PacketPing.State.GOING_TO) //The packet is going somewhere
+                        {
+                            //It got here
+                            packetPing.PacketState = PacketPing.State.GOING_BACK; //Send it back
+                            NetworkManager.Instance.WritePacket(this.Server.Stream, packetPing);
+                        }
+                        else if (packetPing.PacketState == PacketPing.State.GOING_BACK)
+                        {
+                            //Packet is going back to whoever sent it
+                            if (string.Equals(packetPing.SendingUsername, this.ClientUser.Username)) //It's my ping packet
+                            {
+                                this.Log(packetPing.Trace()); //Show the ping trace
+                            }
+                            else //It's somebody else's packet, but was sent to me
+                            {
+                                this.Log($"ERROR: Got a ping packet sent back to user \"{packetPing.SendingUsername}\", but this user is \"{this.ClientUser.Username}\"!");
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
