@@ -30,9 +30,6 @@ namespace WNSChat.ViewModels
         /** The TCP client */
         protected TcpClient Client;
 
-        /** The client user instance */
-        protected ClientUser ClientUser;
-
         /** The stream to the server */
         //Stream ServerStream;
 
@@ -41,7 +38,6 @@ namespace WNSChat.ViewModels
         public ChatClientViewModel(Dispatcher dispatcher, string username, IPAddress serverIP, ushort port = 9001)
         {
             this.Dispatcher = dispatcher;
-            this.Username = username;
             this.ServerIP = serverIP;
             this.ServerPort = port;
             this.ClientUser = new ClientUser(this) { PermissionLevel = PermissionLevel.USER, Username = username };
@@ -95,12 +91,40 @@ namespace WNSChat.ViewModels
                 return this.Server?.Stream != null;
             });
 
+            this.OpenSettingsCommand = new ButtonCommand(
+            param => //OnOpenSettings
+            {
+                this.RequestShowMessage?.Invoke("Settings not yet implemented!");
+            });
+
+            this.LogoutCommand = new ButtonCommand(
+            param => //OnLogout
+            {
+                Commands.Logout.OnExecute(this.ClientUser, string.Empty); //Have the logout command handle it
+            },
+            param => //CanLogout
+            {
+                return this.Server?.Stream != null && this.Server.Stream.CanWrite;
+            });
+
             this.InitCommands();
         }
 
         #endregion
 
         #region Properties
+
+        /** The client user instance */
+        protected ClientUser _ClientUser;
+        public ClientUser ClientUser
+        {
+            get { return this._ClientUser; }
+            set
+            {
+                this._ClientUser = value;
+                this.OnPropertyChanged(nameof(this.ClientUser));
+            }
+        }
 
         protected ServerConnection _Server;
         public ServerConnection Server
@@ -110,17 +134,6 @@ namespace WNSChat.ViewModels
             {
                 this._Server = value;
                 this.OnPropertyChanged(nameof(this.Server));
-            }
-        }
-
-        protected string _Username;
-        public string Username
-        {
-            get { return this._Username; }
-            set
-            {
-                this._Username = value;
-                this.OnPropertyChanged(nameof(this.Username));
             }
         }
 
@@ -218,7 +231,7 @@ namespace WNSChat.ViewModels
                     }
 
                     //Login
-                    NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketLogin() { ProtocolVersion = NetworkManager.ProtocolVersion, Username = this.Username, PasswordHash = passwordHash });
+                    NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketLogin() { ProtocolVersion = NetworkManager.ProtocolVersion, Username = this.ClientUser.Username, PasswordHash = passwordHash });
 
                     //TODO: find a way to handle server login deny //This is kind of handled by the main handler
                 }
@@ -339,6 +352,16 @@ namespace WNSChat.ViewModels
                             }
                         }
                     }
+                    else if (packet is PacketUserInfo)
+                    {
+                        PacketUserInfo packetUserInfo = packet as PacketUserInfo;
+
+                        if (string.Equals(packetUserInfo.Username, this.ClientUser.Username)) //If it's info about this client
+                        {
+                            this.ClientUser.PermissionLevel = packetUserInfo.PermissionLevel; //Update the permission level
+                            this.OnPropertyChanged(nameof(this.ClientUser));
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -394,6 +417,8 @@ namespace WNSChat.ViewModels
 
         public ButtonCommand SendCommand { get; protected set; }
         public ButtonCommand DisconnectCommand { get; protected set; }
+        public ButtonCommand OpenSettingsCommand { get; protected set; }
+        public ButtonCommand LogoutCommand { get; protected set; }
 
         #endregion
 

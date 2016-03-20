@@ -11,7 +11,7 @@ namespace WNSChat.Common
     public class NetworkManager
     {
         /** The network protocol version */
-        public const uint ProtocolVersion = 2;
+        public const uint ProtocolVersion = 3;
 
         /** The single instance of the NetworkManager */
         private static NetworkManager _Instance;
@@ -42,6 +42,7 @@ namespace WNSChat.Common
             this.RegisterPacketType(typeof(PacketServerInfo));
             this.RegisterPacketType(typeof(PacketDisconnect));
             this.RegisterPacketType(typeof(PacketPing));
+            this.RegisterPacketType(typeof(PacketUserInfo));
         }
 
         /// <summary>

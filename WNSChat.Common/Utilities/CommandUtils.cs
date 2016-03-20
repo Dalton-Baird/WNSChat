@@ -18,10 +18,9 @@ namespace WNSChat.Common.Utilities
         /// </summary>
         /// <param name="line">The line to parse</param>
         /// <param name="errorStr">The error message for the thrown exception if the input doesn't match the regular expression</param>
-        /// <param name="argMatchers">Any amount of argument matchers, as Tuples.  The string is the regex
-        /// to match the argument, the bool is whether the argument is required.</param>
+        /// <param name="argMatchers">Any amount of argument matchers, as regular expression strings.
         /// <returns>The parsed strings</returns>
-        public static IEnumerable<string> ParseCommandArgs(string line, string errorStr, params Tuple<string, bool>[] argMatchers)
+        public static IEnumerable<string> ParseCommandArgs(string line, string errorStr, params string[] argMatchers)
         {
             if (line == null) //Make sure this isn't null
                 line = string.Empty;
@@ -33,13 +32,12 @@ namespace WNSChat.Common.Utilities
 
             foreach (var argMatcher in argMatchers)
             {
-                //TODO: how to get required to work
                 if (isFirst)
                     sb.Append(@"\s*"); //Match 0 or more whitespace
                 else
                     sb.Append(@"\s+"); //Match 1 or more whitespace
 
-                sb.Append($"({argMatcher.Item1})"); //Append the argument parser regex
+                sb.Append($"({argMatcher})"); //Append the argument parser regex
             }
 
             string regexStr = sb.ToString();
@@ -67,6 +65,6 @@ namespace WNSChat.Common.Utilities
         }
 
         /** Overloaded version that doesn't take an error string */
-        public static IEnumerable<string> ParseCommandArgs(string line, params Tuple<string, bool>[] argMatchers) => ParseCommandArgs(line, null, argMatchers);
+        public static IEnumerable<string> ParseCommandArgs(string line, params string[] argMatchers) => ParseCommandArgs(line, null, argMatchers);
     }
 }

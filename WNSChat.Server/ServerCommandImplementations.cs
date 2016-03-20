@@ -194,10 +194,10 @@ namespace WNSChat.Server
 
             Commands.Kick.Execute += (u, s) =>
             {
-                var argMatchers = new Tuple<string, bool>[]
+                var argMatchers = new string[]
                 {
-                    new Tuple<string, bool>(Constants.UsernameRegexStrInline, true),
-                    new Tuple<string, bool>(".*", false)
+                    Constants.UsernameRegexStrInline,
+                    ".*"
                 };
 
                 //Parse the command arguments
@@ -239,10 +239,10 @@ namespace WNSChat.Server
 
             Commands.Tell.Execute += (u, s) =>
             {
-                var argMatchers = new Tuple<string, bool>[]
+                var argMatchers = new string[]
                 {
-                    new Tuple<string, bool>(Constants.UsernameRegexStrInline, true),
-                    new Tuple<string, bool>(".*", false)
+                    Constants.UsernameRegexStrInline,
+                    ".*"
                 };
 
                 //Parse the command arguments
@@ -295,11 +295,11 @@ namespace WNSChat.Server
 
             Commands.Sudo.Execute += (u, s) =>
             {
-                var argMatchers = new Tuple<string, bool>[]
+                var argMatchers = new string[]
                 {
-                    new Tuple<string, bool>(Constants.UsernameRegexStrInline, true),
-                    new Tuple<string, bool>("(?:useMyPermissions)?", false),
-                    new Tuple<string, bool>(@"\/.*", true)
+                    Constants.UsernameRegexStrInline,
+                    "(?:useMyPermissions)?",
+                    @"\/.*"
                 };
 
                 //Parse the command arguments
@@ -326,6 +326,59 @@ namespace WNSChat.Server
                     command.OnExecute(userToSudo, restOfCommand, u.PermissionLevel);
                 else
                     command.OnExecute(userToSudo, restOfCommand);
+            };
+
+            Commands.SetUserLevel.Execute += (u, s) =>
+            {
+                var argMatchers = new string[]
+                {
+                    Constants.UsernameRegexStrInline,
+                    @"(?:USER$)|(?:OPERATOR$)|(?:ADMIN$)|(?:SERVER$)"
+                };
+
+                //Parse the command arguments
+                IEnumerable<string> parameters = CommandUtils.ParseCommandArgs(s, $"Invalid command syntax, username must match the regex string \"{Constants.UsernameRegexStrInline}\", and a user level must be specified. Type /help for more info.", argMatchers);
+
+                string username = parameters.ElementAtOrDefault(0);
+                string userLevelStr = parameters.ElementAtOrDefault(1);
+
+                PermissionLevel userLevel;
+
+                switch (userLevelStr) //Parse the user level
+                {
+                    case "USER": userLevel = PermissionLevel.USER; break;
+                    case "OPERATOR": userLevel = PermissionLevel.OPERATOR; break;
+                    case "ADMIN": userLevel = PermissionLevel.ADMIN; break;
+                    case "SERVER": userLevel = PermissionLevel.SERVER; break;
+                    default: throw new CommandSyntaxException($"ERROR: Unknown permission level \"{userLevelStr}\". How did the regular expression even allow this?");
+                }
+
+                IUser userToSet = this.FindUserByUsername<IUser>(username);
+
+                if (userToSet == null)
+                    throw new CommandException($"User \"{username}\" not found");
+
+                if (userToSet is ServerConsoleUser)
+                    throw new CommandException("You cannot change the server's permission level!");
+
+                if (userLevel > u.PermissionLevel)
+                    throw new CommandException($"You cannot set a permission level higher than your own. Your permission level is {u.PermissionLevel}.");
+
+                if (userToSet.PermissionLevel > u.PermissionLevel)
+                    throw new CommandException($"You cannot change the permission level of a user with a higher permission level than your own. Your permission level is {u.PermissionLevel}.");
+
+                this.LogToUsers($"{u.Username}: Changed {userToSet.Username}'s permission level to {userLevel}.");
+
+                userToSet.PermissionLevel = userLevel; //Set the user level
+                
+                lock (this.UsersLock) //Send packets to all users to notify them of the change
+                    foreach (IUser user in this.Users)
+                        if (user is ClientConnection)
+                        {
+                            ClientConnection client = user as ClientConnection;
+
+                            NetworkManager.Instance.WritePacket(client.Stream, new PacketUserInfo() { Username = userToSet.Username, PermissionLevel = userToSet.PermissionLevel });
+                        }
             };
         }
 

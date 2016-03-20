@@ -17,6 +17,9 @@ namespace WNSChat.Utilities
         /** The server's name */
         public string ServerName { get; set; }
 
+        /** The user count on the server */
+        public int UserCount { get; set; } //TODO: use this
+
         public ServerConnection(TcpClient client)
         {
             this.Stream = client.GetStream();
