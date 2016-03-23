@@ -37,6 +37,9 @@
                         <sys:String xml:space="preserve">This multiline message is from&#10;the Visual Studio designer!</sys:String>
                         <sys:String>This is a really really long message.  It will probably go off of the screen in the designer.  That's ok, because that was the goal.</sys:String>
                         <sys:String>Another message!</sys:String>
+                        <sys:String>1</sys:String>
+                        <sys:String>2</sys:String>
+                        <sys:String>3</sys:String>
                         <sys:String>More dummy content</sys:String>
                         <sys:String>This will probably go off the screen vertically.</sys:String>
                         <sys:String>You probably can't see this.</sys:String>
@@ -114,17 +117,37 @@
             </TextBlock>
         </Grid>
 
-        <!--<ListView x:Name="MessageListView" Grid.Row="3" Margin="4,4,4,4" Background="#555555" Foreground="#EEEEEE" ItemsSource="{Binding Path=ChatClient.MessageLog}" FontFamily="Courier New"/>-->
-        <ListBox x:Name="MessageListBox" Grid.Row="3" Margin="4,4,4,4" Background="#555555" Foreground="#EEEEEE" ItemsSource="{Binding Path=ChatClient.MessageLog}" Focusable="False" FontFamily="Courier New">
-            <ListBox.Resources>
-                
-            </ListBox.Resources>
-            <ListBox.ItemTemplate>
+        <!-- See http://stackoverflow.com/questions/2783845/virtualizing-an-itemscontrol -->
+        <!-- Setting ScrollViewer.CanContentScroll to false disables virtualization, but enables non-snappy scrolling -->
+        <ItemsControl Grid.Row="3" x:Name="MessageListBox" Margin="4,4,4,4" Background="#555555" Foreground="#EEEEEE" ItemsSource="{Binding Path=ChatClient.MessageLog}"
+                      VirtualizingStackPanel.IsVirtualizing="True" ScrollViewer.CanContentScroll="False" ScrollViewer.IsDeferredScrollingEnabled="False"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto">
+
+            <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <TextBox Text="{Binding Path=.}" Margin="2,2,2,2"/>
+                    <TextBox Text="{Binding Path=.}" Margin="2" Padding="2" IsReadOnly="True" Background="#616161" BorderThickness="0"
+                             Foreground="#EEEEEE" FontFamily="Courier New"/>
                 </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+            </ItemsControl.ItemTemplate>
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.Template>
+                <ControlTemplate>
+                    <Border BorderThickness="{TemplateBinding Border.BorderThickness}"
+                            Padding="{TemplateBinding Control.Padding}"
+                            BorderBrush="{TemplateBinding Border.BorderBrush}"
+                            Background="{TemplateBinding Panel.Background}"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer Padding="{TemplateBinding Control.Padding}" Focusable="False">
+                            <ItemsPresenter SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}"/>
+                        </ScrollViewer>
+                    </Border>
+                </ControlTemplate>
+            </ItemsControl.Template>
+        </ItemsControl>
 
         <Grid Grid.Row="4" Background="#444444">
             <Grid.ColumnDefinitions>
