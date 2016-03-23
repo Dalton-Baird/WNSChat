@@ -5,7 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WNSChat.Utilities
+namespace WNSChat.Client.Utilities
 {
     public class ServerConnection
     {
@@ -19,6 +19,8 @@ namespace WNSChat.Utilities
 
         /** The user count on the server */
         public int UserCount { get; set; } //TODO: use this
+
+        public ServerConnection() { } //For use by the designer
 
         public ServerConnection(TcpClient client)
         {

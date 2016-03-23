@@ -35,6 +35,8 @@ namespace WNSChat.ViewModels
 
         #region Constructor
 
+        public ChatClientViewModel() { } //Empty constructor so the designer can make one of these that isn't live
+
         public ChatClientViewModel(Dispatcher dispatcher, string username, IPAddress serverIP, ushort port = 9001)
         {
             this.Dispatcher = dispatcher;

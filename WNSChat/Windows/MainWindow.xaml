@@ -5,8 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WNSChat.Windows"
         xmlns:common="clr-namespace:WNSChat.Common;assembly=WNSChat.Common"
+        xmlns:vm="clr-namespace:WNSChat.ViewModels"
+        xmlns:util="clr-namespace:WNSChat.Client.Utilities"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
-        Height="384" Width="512" MinHeight="384" MinWidth="384" WindowStartupLocation="CenterOwner">
+        Height="384" Width="512" MinHeight="384" MinWidth="384" WindowStartupLocation="CenterOwner"
+         d:DataContext="{Binding Source={StaticResource ResourceKey=DesignViewModel}}">
 
     <Window.Title>
         <MultiBinding StringFormat="WNS Chat - v{0} - Protocol Version: {1}">
@@ -14,6 +18,33 @@
             <Binding Source="{x:Static common:NetworkManager.ProtocolVersion}"/>
         </MultiBinding>
     </Window.Title>
+
+    <Window.Resources>
+        <!-- Dummy data for the designer -->
+        <vm:MainWindowViewModel x:Key="DesignViewModel">
+            <vm:MainWindowViewModel.ChatClient>
+                <vm:ChatClientViewModel>
+                    <vm:ChatClientViewModel.ClientUser>
+                        <util:ClientUser Username="Designer User" PermissionLevel="USER"/>
+                    </vm:ChatClientViewModel.ClientUser>
+                    <vm:ChatClientViewModel.Server>
+                        <util:ServerConnection ServerName="Designer Server" UserCount="3"/>
+                    </vm:ChatClientViewModel.Server>
+                    <vm:ChatClientViewModel.MessageLog>
+                        <sys:String>Hello World!</sys:String>
+                        <sys:String>Sample Message.</sys:String>
+                        <sys:String>Test 123</sys:String>
+                        <sys:String xml:space="preserve">This multiline message is from&#10;the Visual Studio designer!</sys:String>
+                        <sys:String>This is a really really long message.  It will probably go off of the screen in the designer.  That's ok, because that was the goal.</sys:String>
+                        <sys:String>Another message!</sys:String>
+                        <sys:String>More dummy content</sys:String>
+                        <sys:String>This will probably go off the screen vertically.</sys:String>
+                        <sys:String>You probably can't see this.</sys:String>
+                    </vm:ChatClientViewModel.MessageLog>
+                </vm:ChatClientViewModel>
+            </vm:MainWindowViewModel.ChatClient>
+        </vm:MainWindowViewModel>
+    </Window.Resources>
     
     <Grid Background="#444444">
         <Grid.RowDefinitions>
@@ -83,7 +114,17 @@
             </TextBlock>
         </Grid>
 
-        <ListBox x:Name="MessageListBox" Grid.Row="3" Margin="4,4,4,4" Background="#555555" Foreground="#EEEEEE" ItemsSource="{Binding Path=ChatClient.MessageLog}" Focusable="False" FontFamily="Courier New"/>
+        <!--<ListView x:Name="MessageListView" Grid.Row="3" Margin="4,4,4,4" Background="#555555" Foreground="#EEEEEE" ItemsSource="{Binding Path=ChatClient.MessageLog}" FontFamily="Courier New"/>-->
+        <ListBox x:Name="MessageListBox" Grid.Row="3" Margin="4,4,4,4" Background="#555555" Foreground="#EEEEEE" ItemsSource="{Binding Path=ChatClient.MessageLog}" Focusable="False" FontFamily="Courier New">
+            <ListBox.Resources>
+                
+            </ListBox.Resources>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBox Text="{Binding Path=.}" Margin="2,2,2,2"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
 
         <Grid Grid.Row="4" Background="#444444">
             <Grid.ColumnDefinitions>

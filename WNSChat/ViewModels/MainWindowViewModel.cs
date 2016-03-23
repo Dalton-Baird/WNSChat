@@ -22,6 +22,8 @@ namespace WNSChat.ViewModels
     {
         #region Constructor
 
+        public MainWindowViewModel() { } //For use by the designer
+
         public MainWindowViewModel(ChatClientViewModel chatClient)
         {
             this.ChatClient = chatClient;

@@ -7,10 +7,12 @@ using WNSChat.Common;
 using WNSChat.Common.Cmd;
 using WNSChat.ViewModels;
 
-namespace WNSChat.Utilities
+namespace WNSChat.Client.Utilities
 {
     public class ClientUser : IUser
     {
+        public ClientUser() { } //For use by the designer
+
         public ClientUser(ChatClientViewModel vm)
         {
             this.ViewModel = vm;
