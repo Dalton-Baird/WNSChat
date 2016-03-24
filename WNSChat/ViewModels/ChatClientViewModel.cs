@@ -100,12 +100,6 @@ namespace WNSChat.ViewModels
                 return this.Server?.Stream != null;
             });
 
-            this.OpenSettingsCommand = new ButtonCommand(
-            param => //OnOpenSettings
-            {
-                this.RequestShowMessage?.Invoke("Settings not yet implemented!");
-            });
-
             this.LogoutCommand = new ButtonCommand(
             param => //OnLogout
             {
@@ -406,6 +400,7 @@ namespace WNSChat.ViewModels
 
             //Login stuff
             this.Server.ServerName = serverInfo.ServerName;
+            this.Server.UserCount = serverInfo.UserCount;
             this.OnPropertyChanged(nameof(this.Server));
         }
 
@@ -426,7 +421,6 @@ namespace WNSChat.ViewModels
 
         public ButtonCommand SendCommand { get; protected set; }
         public ButtonCommand DisconnectCommand { get; protected set; }
-        public ButtonCommand OpenSettingsCommand { get; protected set; }
         public ButtonCommand LogoutCommand { get; protected set; }
 
         #endregion

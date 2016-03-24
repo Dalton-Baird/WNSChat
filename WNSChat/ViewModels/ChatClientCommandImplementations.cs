@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using WNSChat.Common;
 using WNSChat.Common.Cmd;
+using WNSChat.Common.Messages;
 using WNSChat.Common.Packets;
 
 namespace WNSChat.ViewModels
@@ -44,6 +45,17 @@ namespace WNSChat.ViewModels
                 NetworkManager.Instance.WritePacket(this.Server.Stream, packet); //Send the packet
             };
             commandsToNotSend.Add(Commands.Ping);
+
+            Commands.Clear.Execute += (u, s) =>
+            {
+                //Dispose of the messages if they need disposed of
+                foreach (Message message in this.MessageLog)
+                    if (message is IDisposable)
+                        ((IDisposable)message).Dispose();
+
+                this.MessageLog.Clear(); //Clears the message log
+            };
+            commandsToNotSend.Add(Commands.Clear);
 
             //Hook up unhandled commands to the say command so that the server can handle them
             foreach (Command command in Commands.AllCommands)

@@ -205,7 +205,7 @@ namespace WNSChat.Server
         {
             bool passwordRequired = !string.IsNullOrWhiteSpace(this.PasswordHash);
 
-            NetworkManager.Instance.WritePacket(client.Stream, new PacketServerInfo() { ProtocolVersion = NetworkManager.ProtocolVersion, UserCount = this.Users.Count, PasswordRequired = passwordRequired, ServerName = this.ServerName });
+            NetworkManager.Instance.WritePacket(client.Stream, new PacketServerInfo() { ProtocolVersion = NetworkManager.ProtocolVersion, UserCount = this.Users.Count(u => !(u is ServerConsoleUser)), PasswordRequired = passwordRequired, ServerName = this.ServerName });
         }
 
         /** Sends server info packets to all connected clients */
@@ -342,6 +342,9 @@ namespace WNSChat.Server
             ThreadPool.QueueUserWorkItem(this.ProcessClientThread, client);
             this.Log($"Connection established to client {client}");
             this.LogToClients($"Client {client} connected!");
+
+            //Send all of the clients updated server info
+            this.SendServerInfoUpdates();
         }
 
         /** Handles incoming packets from a client */
@@ -392,6 +395,9 @@ namespace WNSChat.Server
 
                         client.Close();
                         client.Dispose();
+
+                        this.SendServerInfoUpdates(); //Send all users updated server info
+
                         return; //Exit thread
                     }
                     else if (packet is PacketPing)
@@ -455,6 +461,8 @@ namespace WNSChat.Server
 
                         client.Close();
                         client.Dispose();
+
+                        this.SendServerInfoUpdates(); //Send all users updated server info
                     }
 
                     return; //Exit thread

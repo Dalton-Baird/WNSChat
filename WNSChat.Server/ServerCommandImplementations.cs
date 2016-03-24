@@ -380,6 +380,14 @@ namespace WNSChat.Server
                             NetworkManager.Instance.WritePacket(client.Stream, new PacketUserInfo() { Username = userToSet.Username, PermissionLevel = userToSet.PermissionLevel });
                         }
             };
+
+            Commands.Clear.Execute += (u, s) =>
+            {
+                if (!(u is ServerConsoleUser))
+                    throw new CommandException($"Only the server console can use the /{Commands.Clear.Name} command on the server.");
+
+                Console.Clear(); //Clear the console
+            };
         }
 
         private void UnInitCommands()

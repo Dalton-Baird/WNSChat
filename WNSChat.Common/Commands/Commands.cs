@@ -28,5 +28,6 @@ namespace WNSChat.Common.Cmd
         public static Command ServerName { get; } = new Command("serverName", "Changes the server's name.", "/serverName My Awesome Server", PermissionLevel.ADMIN);
         public static Command Sudo { get; } = new Command("sudo", "Makes another user execute a command, optionally with your permission level. Only works on server side commands.", "/sudo USERNAME [useMyPermissions] COMMAND", PermissionLevel.OPERATOR);
         public static Command Logout { get; } = new Command("logout", "Logs you out of the server.", "/logout", PermissionLevel.USER);
+        public static Command Clear { get; } = new Command("clear", "Clears your chat history.", "/clear", PermissionLevel.USER);
     }
 }

@@ -59,6 +59,12 @@ namespace WNSChat.ViewModels
                 this.RequestShowConnectWindow?.Invoke(this.ChatClient);
                 this.RequestClose?.Invoke();
             };
+
+            this.OpenSettingsCommand = new ButtonCommand(
+            param => //OnOpenSettings
+            {
+                this.RequestShowMessage?.Invoke("Settings not yet implemented!");
+            });
         }
 
         #endregion
@@ -89,6 +95,8 @@ namespace WNSChat.ViewModels
         #endregion
 
         #region Commands
+
+        public ButtonCommand OpenSettingsCommand { get; protected set; }
 
         #endregion
 

@@ -64,7 +64,7 @@
                 </ItemsPanelTemplate>
             </Menu.ItemsPanel>
             
-            <MenuItem Header="Settings" Foreground="#EEEEEE" Command="{Binding ChatClient.OpenSettingsCommand, Mode=OneWay}"/>
+            <MenuItem Header="Settings" Foreground="#EEEEEE" Command="{Binding OpenSettingsCommand, Mode=OneWay}"/>
             <MenuItem Header="Logout" Foreground="#EEEEEE" Command="{Binding ChatClient.LogoutCommand, Mode=OneWay}" HorizontalAlignment="Right"/>
         </Menu>
 

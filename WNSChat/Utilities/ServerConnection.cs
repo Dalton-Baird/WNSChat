@@ -18,7 +18,7 @@ namespace WNSChat.Client.Utilities
         public string ServerName { get; set; }
 
         /** The user count on the server */
-        public int UserCount { get; set; } //TODO: use this
+        public int UserCount { get; set; }
 
         public ServerConnection() { } //For use by the designer
 
