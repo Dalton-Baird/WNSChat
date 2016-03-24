@@ -7,6 +7,7 @@
         xmlns:common="clr-namespace:WNSChat.Common;assembly=WNSChat.Common"
         xmlns:vm="clr-namespace:WNSChat.ViewModels"
         xmlns:util="clr-namespace:WNSChat.Client.Utilities"
+        xmlns:msg="clr-namespace:WNSChat.Common.Messages;assembly=WNSChat.Common"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
         Height="384" Width="512" MinHeight="384" MinWidth="384" WindowStartupLocation="CenterOwner"
@@ -31,25 +32,23 @@
                         <util:ServerConnection ServerName="Designer Server" UserCount="3"/>
                     </vm:ChatClientViewModel.Server>
                     <vm:ChatClientViewModel.MessageLog>
-                        <sys:String>Hello World!</sys:String>
-                        <sys:String>Sample Message.</sys:String>
-                        <sys:String>Test 123</sys:String>
-                        <sys:String xml:space="preserve">This multiline message is from&#10;the Visual Studio designer!</sys:String>
-                        <sys:String>This is a really really long message.  It will probably go off of the screen in the designer.  That's ok, because that was the goal.</sys:String>
-                        <sys:String>Another message!</sys:String>
-                        <sys:String>1</sys:String>
-                        <sys:String>2</sys:String>
-                        <sys:String>3</sys:String>
-                        <sys:String>More dummy content</sys:String>
-                        <sys:String>This will probably go off the screen vertically.</sys:String>
-                        <sys:String>You probably can't see this.</sys:String>
+                        <msg:MessageText Text="Hello World!"/>
+                        <msg:MessageText Text="Sample Message."/>
+                        <msg:MessageText Text="Test 123"/>
+                        <msg:MessageText Text="This multiline message is from&#10;the Visual Studio designer!"/>
+                        <msg:MessageText Text="This is a really really long message.  It will probably go off of the screen in the designer.  That's ok, because that was the goal."/>
+                        <msg:MessageText Text="Another message!"/>
+                        <msg:MessageText Text="More dummy content"/>
+                        <msg:MessageText Text="Even more dummy content"/>
+                        <msg:MessageText Text="This will probably go off the screen vertically."/>
+                        <msg:MessageText Text="You probably can't see this."/>
                     </vm:ChatClientViewModel.MessageLog>
                 </vm:ChatClientViewModel>
             </vm:MainWindowViewModel.ChatClient>
         </vm:MainWindowViewModel>
     </Window.Resources>
     
-    <Grid Background="#444444">
+    <Grid Background="#444444" FocusManager.FocusedElement="{Binding ElementName=MessageBox}">
         <Grid.RowDefinitions>
             <RowDefinition Height="20"/>
             <RowDefinition Height="25"/>
@@ -122,13 +121,12 @@
         <ItemsControl Grid.Row="3" x:Name="MessageListBox" Margin="4,4,4,4" Background="#555555" Foreground="#EEEEEE" ItemsSource="{Binding Path=ChatClient.MessageLog}"
                       VirtualizingStackPanel.IsVirtualizing="True" ScrollViewer.CanContentScroll="False" ScrollViewer.IsDeferredScrollingEnabled="False"
                       ScrollViewer.HorizontalScrollBarVisibility="Auto">
-
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <TextBox Text="{Binding Path=.}" Margin="2" Padding="2" IsReadOnly="True" Background="#616161" BorderThickness="0"
+            <ItemsControl.Resources>
+                <DataTemplate DataType="{x:Type msg:MessageText}">
+                    <TextBox Text="{Binding Path=Text}" Margin="2" Padding="2" IsReadOnly="True" Background="#616161" BorderThickness="0"
                              Foreground="#EEEEEE" FontFamily="Courier New"/>
                 </DataTemplate>
-            </ItemsControl.ItemTemplate>
+            </ItemsControl.Resources>
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <VirtualizingStackPanel/>
@@ -155,7 +153,7 @@
                 <ColumnDefinition Width="60"/>
             </Grid.ColumnDefinitions>
 
-            <TextBox Grid.Column="0" Height="52" Margin="4,4,4,4" Background="#555555" ToolTip="Enter a message" Foreground="#EEEEEE" Text="{Binding Path=ChatClient.Message, UpdateSourceTrigger=PropertyChanged}"/>
+            <TextBox x:Name="MessageBox" Grid.Column="0" Height="52" Margin="4,4,4,4" Background="#555555" ToolTip="Enter a message" Foreground="#EEEEEE" Text="{Binding Path=ChatClient.Message, UpdateSourceTrigger=PropertyChanged}"/>
             <Button Grid.Column="1" Content="Send" Width="52" Margin="4,4,4,4" HorizontalAlignment="Right" Background="#333333" Foreground="#EEEEEE"
                     IsDefault="True" ToolTip="Send the message" Command="{Binding ChatClient.SendCommand, Mode=OneWay}"/>
         </Grid>

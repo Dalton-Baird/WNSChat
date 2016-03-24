@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using WNSChat.Common;
 using WNSChat.Common.Cmd;
+using WNSChat.Common.Messages;
 using WNSChat.ViewModels;
 
 namespace WNSChat.Client.Utilities
@@ -26,7 +27,7 @@ namespace WNSChat.Client.Utilities
 
         public void SendMessage(string message)
         {
-            this.ViewModel.Log(message);
+            this.ViewModel.DisplayMessage(new MessageText(message));
         }
     }
 }

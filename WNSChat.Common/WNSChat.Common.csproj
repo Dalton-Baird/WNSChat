@@ -46,8 +46,10 @@
     <Compile Include="Commands\CommandSyntaxException.cs" />
     <Compile Include="Commands\PermissionLevel.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="Messages\Message.cs" />
     <Compile Include="Exceptions\LoginFailedException.cs" />
     <Compile Include="IUser.cs" />
+    <Compile Include="Messages\MessageText.cs" />
     <Compile Include="NetworkManager.cs" />
     <Compile Include="Packets\Packet.cs" />
     <Compile Include="Packets\PacketDisconnect.cs" />

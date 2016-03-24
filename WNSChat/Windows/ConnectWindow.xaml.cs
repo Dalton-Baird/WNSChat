@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using WNSChat.ViewModels;
 using WNSChat.Utilities.WindowExtensions;
-using WNSChat.Properties;
+using WNSChat.Client.Properties;
 
 namespace WNSChat.Windows
 {

@@ -16,6 +16,7 @@ using System.Windows.Shapes;
 using WNSChat.Client.Utilities;
 using WNSChat.ViewModels;
 using WNSChat.Utilities.WindowExtensions;
+using WNSChat.Common.Messages;
 
 namespace WNSChat.Windows
 {
