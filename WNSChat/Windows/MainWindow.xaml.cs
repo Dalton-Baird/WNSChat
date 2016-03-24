@@ -27,6 +27,8 @@ namespace WNSChat.Windows
     {
         private MainWindowViewModel ViewModel;
 
+        private bool AutoScroll { get; set; }
+
         public MainWindow(ChatClientViewModel chatClient)
         {
             InitializeComponent();
@@ -49,13 +51,6 @@ namespace WNSChat.Windows
             //    }
             //};
 
-            //ListBox auto scroll
-            //this.ViewModel.MessageLog.CollectionChanged += (s, e) =>
-            //{
-            //    this.MessageListBox.SelectedIndex = this.MessageListBox.Items.Count - 1;
-            //    this.MessageListBox.ScrollIntoView(this.MessageListBox.SelectedItem);
-            //};
-
             //Handle ViewModel Requests
             Action<string> showError = s => MessageBoxUtils.ShowError(s, this);
             Predicate<string> confirmDelete = s => MessageBoxUtils.BoolConfirmDelete(s, this);
@@ -69,6 +64,32 @@ namespace WNSChat.Windows
 
             this.ViewModel.RequestShowConnectWindow += ccvm => new ConnectWindow(ccvm).CenterOnWindow(this).Show();
             this.ViewModel.RequestClose += this.Close;
+        }
+
+        //See http://stackoverflow.com/questions/16743804/implementing-a-log-viewer-with-wpf
+        private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            //MessageBoxUtils.ShowMessage($"ScrollChanged event fired! Sender: {sender}, Source: {e.Source}", this);
+
+            //ScrollViewer scrollViewer = e.Source as ScrollViewer;
+            ScrollViewer scrollViewer = sender as ScrollViewer;
+
+            if (scrollViewer == null)
+                return;
+
+            //User scroll event: set or unset autoscroll mode
+            if (e.ExtentHeightChange == 0)
+            {
+                //If the scroll bar is at the bottom, turn on auto scroll mode
+                if (scrollViewer.VerticalOffset == scrollViewer.ScrollableHeight)
+                    this.AutoScroll = true;
+                else
+                    this.AutoScroll = false;
+            }
+
+            //Auto scroll
+            if (this.AutoScroll && e.ExtentHeightChange != 0)
+                scrollViewer.ScrollToVerticalOffset(scrollViewer.ExtentHeight);
         }
     }
 }

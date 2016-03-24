@@ -124,7 +124,11 @@
             <ItemsControl.Resources>
                 <DataTemplate DataType="{x:Type msg:MessageText}">
                     <TextBox Text="{Binding Path=Text}" Margin="2" Padding="2" IsReadOnly="True" Background="#616161" BorderThickness="0"
-                             Foreground="#EEEEEE" FontFamily="Courier New"/>
+                             Foreground="#EEEEEE" FontFamily="Courier New">
+                        <TextBox.ToolTip>
+                            <TextBlock Text="{Binding Path=CreatedDate, StringFormat='Created at {0}'}"/>
+                        </TextBox.ToolTip>
+                    </TextBox>
                 </DataTemplate>
             </ItemsControl.Resources>
             <ItemsControl.ItemsPanel>
@@ -139,7 +143,7 @@
                             BorderBrush="{TemplateBinding Border.BorderBrush}"
                             Background="{TemplateBinding Panel.Background}"
                             SnapsToDevicePixels="True">
-                        <ScrollViewer Padding="{TemplateBinding Control.Padding}" Focusable="False">
+                        <ScrollViewer Padding="{TemplateBinding Control.Padding}" Focusable="False" ScrollChanged="ScrollViewer_ScrollChanged">
                             <ItemsPresenter SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}"/>
                         </ScrollViewer>
                     </Border>

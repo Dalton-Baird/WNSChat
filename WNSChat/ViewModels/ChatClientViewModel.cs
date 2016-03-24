@@ -212,12 +212,12 @@ namespace WNSChat.ViewModels
             {
                 this.Client = new TcpClient();
 
-                this.DisplayMessage(new MessageText($"Connecting to server at {this.ServerIP}:{this.ServerPort}..."));
+                this.DisplayMessage($"Connecting to server at {this.ServerIP}:{this.ServerPort}...");
 
                 this.Client.Connect(this.ServerIP, this.ServerPort);
                 this.Server = new ServerConnection(this.Client);
 
-                this.DisplayMessage(new MessageText("Connected!"));
+                this.DisplayMessage("Connected!");
 
                 this.SendCommand.OnCanExecuteChanged(this); //The send button's CanSend conditions changed
                 this.DisconnectCommand.OnCanExecuteChanged(this); //The disconnect command's CanDisconnect conditions changed
@@ -248,7 +248,7 @@ namespace WNSChat.ViewModels
                 {
                     PacketDisconnect packetDisconnect = packet as PacketDisconnect;
 
-                    this.DisplayMessage(new MessageText($"Server refused connection.  Reason: {packetDisconnect.Reason}."));
+                    this.DisplayMessage($"Server refused connection.  Reason: {packetDisconnect.Reason}.");
                     this.DisconnectFromServer(null, false, packetDisconnect.Reason);
                     return false;
                 }
@@ -262,7 +262,7 @@ namespace WNSChat.ViewModels
             }
             catch (Exception ex)
             {
-                this.DisplayMessage(new MessageText($"Error encountered in client loop: {ex}"));
+                this.DisplayMessage($"Error encountered in client loop: {ex}");
 
                 this.DisconnectFromServer("Encountered an error while connecting", clientReasonIsBad: true);
 
@@ -281,7 +281,7 @@ namespace WNSChat.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    this.DisplayMessage(new MessageText($"Error sending disconnect packet: {ex}"));
+                    this.DisplayMessage($"Error sending disconnect packet: {ex}");
                 }
             }
 
@@ -320,13 +320,13 @@ namespace WNSChat.ViewModels
                     {
                         PacketSimpleMessage packetSimpleMessage = packet as PacketSimpleMessage;
 
-                        this.DisplayMessage(new MessageText($"{packetSimpleMessage.Message}"));
+                        this.DisplayMessage($"{packetSimpleMessage.Message}");
                     }
                     else if (packet is PacketDisconnect)
                     {
                         PacketDisconnect packetDisconnect = packet as PacketDisconnect;
 
-                        this.DisplayMessage(new MessageText($"Server closed connection.  Reason: {packetDisconnect.Reason}."));
+                        this.DisplayMessage($"Server closed connection.  Reason: {packetDisconnect.Reason}.");
 
                         this.DisconnectFromServer(null, false, packetDisconnect.Reason);
 
@@ -353,11 +353,11 @@ namespace WNSChat.ViewModels
                             //Packet is going back to whoever sent it
                             if (string.Equals(packetPing.SendingUsername, this.ClientUser.Username)) //It's my ping packet
                             {
-                                this.DisplayMessage(new MessageText(packetPing.Trace())); //Show the ping trace
+                                this.DisplayMessage(packetPing.Trace()); //Show the ping trace
                             }
                             else //It's somebody else's packet, but was sent to me
                             {
-                                this.DisplayMessage(new MessageText($"ERROR: Got a ping packet sent back to user \"{packetPing.SendingUsername}\", but this user is \"{this.ClientUser.Username}\"!"));
+                                this.DisplayMessage($"ERROR: Got a ping packet sent back to user \"{packetPing.SendingUsername}\", but this user is \"{this.ClientUser.Username}\"!");
                             }
                         }
                     }
@@ -376,7 +376,7 @@ namespace WNSChat.ViewModels
                 {
                     if (this.Server != null && this.Server.Stream != null) //Only show the errors and disconnect if the server exists
                     {
-                        this.DisplayMessage(new MessageText($"Error handling data from server!\n{ex}"));
+                        this.DisplayMessage($"Error handling data from server!\n{ex}");
                         this.DisconnectFromServer($"Error handling data from server: {ex.Message}", clientReasonIsBad: true);
                     }
 
@@ -392,13 +392,13 @@ namespace WNSChat.ViewModels
             {
                 if (serverInfo.ProtocolVersion < NetworkManager.ProtocolVersion) //Client is out of date
                 {
-                    this.DisplayMessage(new MessageText($"The server is out of date! Client protocol version: {NetworkManager.ProtocolVersion}.  Server protocol version: {serverInfo.ProtocolVersion}."));
+                    this.DisplayMessage($"The server is out of date! Client protocol version: {NetworkManager.ProtocolVersion}.  Server protocol version: {serverInfo.ProtocolVersion}.");
                     NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = "Server out of date" });
                     throw new Exception("Out of date server.");
                 }
                 else if (serverInfo.ProtocolVersion > NetworkManager.ProtocolVersion) //Server is out of date
                 {
-                    this.DisplayMessage(new MessageText($"Your client is out of date. Client protocol version: {NetworkManager.ProtocolVersion}.  Server protocol version: {serverInfo.ProtocolVersion}."));
+                    this.DisplayMessage($"Your client is out of date. Client protocol version: {NetworkManager.ProtocolVersion}.  Server protocol version: {serverInfo.ProtocolVersion}.");
                     NetworkManager.Instance.WritePacket(this.Server.Stream, new PacketDisconnect() { Reason = "Client out of date" });
                     throw new Exception("Out of date client.");
                 }
